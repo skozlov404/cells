@@ -4644,22 +4644,28 @@
 			"revisionTime": "2017-05-11T16:59:59Z"
 		},
 		{
-			"checksumSHA1": "/M23tzfVu52Cns1yUFoh0VBkngw=",
-			"path": "gopkg.in/doug-martin/goqu.v4",
-			"revision": "cd495d70a4ff280202e22a09de9502a3fe0b66cb",
-			"revisionTime": "2017-12-27T16:44:32Z"
+			"checksumSHA1": "YN/1C2sQo7YgkD4EBfDfgVznhak=",
+			"path": "gopkg.in/doug-martin/goqu.v5",
+			"revision": "6803bc2ea3462276f0e87814761a787d5537c4eb",
+			"revisionTime": "2018-09-10T00:56:07Z"
 		},
 		{
-			"checksumSHA1": "i82yGdNENO9/kZaxb5CYdoiRytA=",
-			"path": "gopkg.in/doug-martin/goqu.v4/adapters/mysql",
-			"revision": "cd495d70a4ff280202e22a09de9502a3fe0b66cb",
-			"revisionTime": "2017-12-27T16:44:32Z"
+			"checksumSHA1": "A/KTLgvzvShS9CelOjISDyK/RvM=",
+			"path": "gopkg.in/doug-martin/goqu.v5/adapters/mysql",
+			"revision": "6803bc2ea3462276f0e87814761a787d5537c4eb",
+			"revisionTime": "2018-09-10T00:56:07Z"
 		},
 		{
-			"checksumSHA1": "Nmc9X7jcU7+7jNx657Kd4a14H0I=",
-			"path": "gopkg.in/doug-martin/goqu.v4/adapters/sqlite3",
-			"revision": "cd495d70a4ff280202e22a09de9502a3fe0b66cb",
-			"revisionTime": "2017-12-27T16:44:32Z"
+			"checksumSHA1": "Y8k5kwIZVcFblvbUS6PcojGm4Q4=",
+			"path": "gopkg.in/doug-martin/goqu.v5/adapters/postgres",
+			"revision": "6803bc2ea3462276f0e87814761a787d5537c4eb",
+			"revisionTime": "2018-09-10T00:56:07Z"
+		},
+		{
+			"checksumSHA1": "NpV3TdfQRye/wA/lCF0TYawx1k0=",
+			"path": "gopkg.in/doug-martin/goqu.v5/adapters/sqlite3",
+			"revision": "6803bc2ea3462276f0e87814761a787d5537c4eb",
+			"revisionTime": "2018-09-10T00:56:07Z"
 		},
 		{
 			"checksumSHA1": "NGg7/qIJVUfXi7xnEyyDLocdi6Y=",

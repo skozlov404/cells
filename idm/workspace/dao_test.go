@@ -36,7 +36,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	// Use SQLite backend for the tests
 	_ "github.com/mattn/go-sqlite3"
-	_ "gopkg.in/doug-martin/goqu.v4/adapters/sqlite3"
+	_ "gopkg.in/doug-martin/goqu.v5/adapters/sqlite3"
 )
 
 var (

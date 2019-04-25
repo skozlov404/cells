@@ -259,7 +259,7 @@ github.com/pydio/cells/vendor/google.golang.org/api/googleapi/internal/uritempla
 github.com/pydio/cells/vendor/google.golang.org/genproto/googleapis                              Apache License 2.0
 github.com/pydio/cells/vendor/google.golang.org/grpc                                             Apache License 2.0
 github.com/pydio/cells/vendor/gopkg.in/asn1-ber.v1                                               MIT License
-github.com/pydio/cells/vendor/gopkg.in/doug-martin/goqu.v4/adapters/mysql                        MIT License
+github.com/pydio/cells/vendor/gopkg.in/doug-martin/goqu.v5/adapters/mysql                        MIT License
 github.com/pydio/cells/vendor/gopkg.in/fatih/set.v0                                              MIT License
 github.com/pydio/cells/vendor/gopkg.in/go-playground/validator.v8                                MIT License
 github.com/pydio/cells/vendor/gopkg.in/gomail.v2                                                 MIT License

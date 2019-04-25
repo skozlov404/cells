@@ -38,7 +38,7 @@ import (
 	// Run tests against SQLite
 	_ "github.com/mattn/go-sqlite3"
 	. "github.com/smartystreets/goconvey/convey"
-	_ "gopkg.in/doug-martin/goqu.v4/adapters/sqlite3"
+	_ "gopkg.in/doug-martin/goqu.v5/adapters/sqlite3"
 )
 
 var (

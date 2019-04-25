@@ -37,7 +37,7 @@ import (
 	"github.com/pydio/cells/common/sql"
 	"github.com/pydio/cells/common/sql/resources"
 	"github.com/pydio/cells/idm/meta/namespace"
-	"gopkg.in/doug-martin/goqu.v4"
+	"gopkg.in/doug-martin/goqu.v5"
 )
 
 var (
