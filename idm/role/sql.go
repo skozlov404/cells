@@ -33,7 +33,7 @@ import (
 	"github.com/pborman/uuid"
 	migrate "github.com/rubenv/sql-migrate"
 	"go.uber.org/zap"
-	"gopkg.in/doug-martin/goqu.v4"
+	"gopkg.in/doug-martin/goqu.v5"
 
 	"github.com/pydio/cells/common"
 	"github.com/pydio/cells/common/log"

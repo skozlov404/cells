@@ -25,7 +25,7 @@ import (
 	"github.com/pydio/cells/common/dao"
 	service "github.com/pydio/cells/common/service/proto"
 	"github.com/pydio/cells/common/sql"
-	"gopkg.in/doug-martin/goqu.v4"
+	"gopkg.in/doug-martin/goqu.v5"
 )
 
 // DAO interface

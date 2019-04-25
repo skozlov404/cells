@@ -6,9 +6,11 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
-	"github.com/pydio/cells/common/service/proto"
-	"gopkg.in/doug-martin/goqu.v4"
-	_ "gopkg.in/doug-martin/goqu.v4/adapters/mysql"
+	service "github.com/pydio/cells/common/service/proto"
+	"gopkg.in/doug-martin/goqu.v5"
+
+	_ "gopkg.in/doug-martin/goqu.v5/adapters/mysql"
+	_ "gopkg.in/doug-martin/goqu.v5/adapters/postgres"
 )
 
 // Expressioner ...
@@ -105,7 +107,7 @@ func QueryStringFromExpression(tableName string, driver string, e Enquirer, ex g
 
 }
 
-// QueryStringFromExpression finally builds a full SELECT from a Goqu Expression
+// CountStringFromExpression finally builds a full SELECT from a Goqu Expression
 func CountStringFromExpression(tableName string, columnCount string, driver string, e Enquirer, ex goqu.Expression, resourceExpression goqu.Expression) (string, []interface{}, error) {
 
 	var db *goqu.Database

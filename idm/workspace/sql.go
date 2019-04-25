@@ -29,7 +29,7 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/micro/go-micro/errors"
 	migrate "github.com/rubenv/sql-migrate"
-	"gopkg.in/doug-martin/goqu.v4"
+	"gopkg.in/doug-martin/goqu.v5"
 
 	"github.com/pydio/cells/common"
 	"github.com/pydio/cells/common/proto/idm"
