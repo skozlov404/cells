@@ -24,13 +24,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/gobuffalo/packr"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
 	migrate "github.com/rubenv/sql-migrate"
 	"go.uber.org/zap"
-	goqu "gopkg.in/doug-martin/goqu.v4"
+	goqu "gopkg.in/doug-martin/goqu.v5"
 
 	"github.com/pydio/cells/common"
 	"github.com/pydio/cells/common/log"
@@ -38,15 +39,37 @@ import (
 	"github.com/pydio/cells/common/sql"
 )
 
+// FIXME this should be global
+const (
+	PQ_FORBIDDEN_DUPLICATE_MESSAGE = "duplicate key value violates unique constraint"
+	MS_FORBIDDEN_DUPLICATE_MESSAGE = "Error 1062: Duplicate entry"
+)
+
+func IsDuplicateError(driver string, err error) bool {
+
+	switch driver {
+	case "mysql":
+		return strings.Contains(err.Error(), MS_FORBIDDEN_DUPLICATE_MESSAGE)
+	case "postgres":
+		return strings.Contains(err.Error(), PQ_FORBIDDEN_DUPLICATE_MESSAGE)
+	case "sqlite3":
+		fmt.Println("FIXME: is this message duplicate error message:", err.Error())
+		return false
+	default:
+		return false
+	}
+
+}
+
 var (
 	queries = map[string]string{
-		"AddACL":          `insert into idm_acls (action_name, action_value, role_id, workspace_id, node_id) values (?, ?, ?, ?, ?)`,
-		"AddACLNode":      `insert into idm_acl_nodes (uuid) values (?)`,
-		"AddACLRole":      `insert into idm_acl_roles (uuid) values (?)`,
-		"AddACLWorkspace": `insert into idm_acl_workspaces (name) values (?)`,
-		"GetACLNode":      `select id from idm_acl_nodes where uuid = ?`,
-		"GetACLRole":      `select id from idm_acl_roles where uuid = ?`,
-		"GetACLWorkspace": `select id from idm_acl_workspaces where name = ?`,
+		// "AddACL":          `insert into idm_acls (action_name, action_value, role_id, workspace_id, node_id) values ($1, $2, $3, $4, $5) RETURNING id`,
+		// "AddACLNode":      `insert into idm_acl_nodes (uuid) values ($1) RETURNING id`,
+		// "AddACLRole":      `insert into idm_acl_roles (uuid) values ($1) RETURNING id`,
+		// "AddACLWorkspace": `insert into idm_acl_workspaces (name) values ($1) RETURNING id`,
+		// "GetACLNode":      `select id from idm_acl_nodes where uuid = $1`,
+		// "GetACLRole":      `select id from idm_acl_roles where uuid = $1`,
+		// "GetACLWorkspace": `select id from idm_acl_workspaces where name = $1`,
 		"CleanWorkspaces": `DELETE FROM idm_acl_workspaces WHERE id != -1 and id NOT IN (select distinct(workspace_id) from idm_acls)`,
 		"CleanRoles":      `DELETE FROM idm_acl_roles WHERE id != -1 and id NOT IN (select distinct(role_id) from idm_acls)`,
 		"CleanNodes":      `DELETE FROM idm_acl_nodes WHERE id != -1 and id NOT IN (select distinct(node_id) from idm_acls)`,
@@ -57,20 +80,33 @@ type sqlimpl struct {
 	sql.DAO
 }
 
+type myOptions struct {
+	common.ConfigValues
+}
+
+func (myOptions) Database(k string) (string, string) {
+	return "postgres", "postgres://pydio:pydio@localhost:5432/cells?sslmode=disable"
+}
+
 // Init handler for the SQL DAO
-func (s *sqlimpl) Init(options common.ConfigValues) error {
+func (dao *sqlimpl) Init(options common.ConfigValues) error {
+
+	// tmpOptions := myOptions{options}
+	// a, b := tmpOptions.Database("unused key")
+	// fmt.Println("### [WARNING] hard coded DB DSN: ", a, b)
+	// dao.DAO.Init(tmpOptions)
 
 	// super
-	s.DAO.Init(options)
+	dao.DAO.Init(options)
 
 	// Doing the database migrations
 	migrations := &sql.PackrMigrationSource{
 		Box:         packr.NewBox("../../idm/acl/migrations"),
-		Dir:         s.Driver(),
-		TablePrefix: s.Prefix(),
+		Dir:         dao.Driver(),
+		TablePrefix: dao.Prefix(),
 	}
 
-	_, err := sql.ExecMigration(s.DB(), s.Driver(), migrations, migrate.Up, "idm_acl_")
+	_, err := sql.ExecMigration(dao.DB(), dao.Driver(), migrations, migrate.Up, "idm_acl_")
 	if err != nil {
 		return err
 	}
@@ -78,7 +114,7 @@ func (s *sqlimpl) Init(options common.ConfigValues) error {
 	// Preparing the db statements
 	if options.Bool("prepare", true) {
 		for key, query := range queries {
-			if err := s.Prepare(key, query); err != nil {
+			if err := dao.Prepare(key, query); err != nil {
 				return err
 			}
 		}
@@ -101,7 +137,8 @@ func (dao *sqlimpl) Add(in interface{}) error {
 
 	workspaceID := "-1"
 	if val.WorkspaceID != "" {
-		id, err := dao.addWorkspace(val.WorkspaceID)
+		// id, err := dao.addWorkspace(val.WorkspaceID)
+		id, err := dao.addWorkspaceWithGoqu(val.WorkspaceID)
 		if err != nil {
 			return err
 		}
@@ -110,7 +147,8 @@ func (dao *sqlimpl) Add(in interface{}) error {
 
 	nodeID := "-1"
 	if val.NodeID != "" {
-		id, err := dao.addNode(val.NodeID)
+		// id, err := dao.addNode(val.NodeID)
+		id, err := dao.addNodeWithGoqu(val.NodeID)
 		if err != nil {
 			return err
 		}
@@ -119,7 +157,8 @@ func (dao *sqlimpl) Add(in interface{}) error {
 
 	roleID := "-1"
 	if val.RoleID != "" {
-		id, err := dao.addRole(val.RoleID)
+		// id, err := dao.addRole(val.RoleID)
+		id, err := dao.addRoleWithGoqu(val.RoleID)
 		if err != nil {
 			return err
 		}
@@ -129,24 +168,46 @@ func (dao *sqlimpl) Add(in interface{}) error {
 	log.Logger(context.Background()).Debug("AddACL",
 		zap.String("r", roleID), zap.String("w", workspaceID), zap.String("n", nodeID), zap.Any("value", val))
 
-	stmt := dao.GetStmt("AddACL")
-	if stmt == nil {
-		return fmt.Errorf("Unknown statement")
-	}
+	// stmt := dao.GetStmt("AddACL")
+	// if stmt == nil {
+	// 	return fmt.Errorf("Unknown statement")
+	// }
 
-	res, err := stmt.Exec(val.Action.Name, val.Action.Value, roleID, workspaceID, nodeID)
+	// var id int64
+	// err := stmt.QueryRow(val.Action.Name, val.Action.Value, roleID, workspaceID, nodeID).Scan(&id)
+
+	id, err := dao.addAclWithGoqu(val.Action.Name, val.Action.Value, roleID, workspaceID, nodeID)
 	if err != nil {
 		return err
 	}
-
-	id, err := res.LastInsertId()
-	if err != nil {
-		return err
-	}
-
-	val.ID = fmt.Sprintf("%d", id)
+	val.ID = id
 
 	return nil
+}
+
+func (dao *sqlimpl) addAclWithGoqu(actionName, actionValue, roleId, workspaceId, nodeId string) (string, error) {
+	db := goqu.New(dao.Driver(), dao.DB())
+
+	_, err := db.From("idm_acls").Insert(goqu.Record{"action_name": actionName,
+		"action_value": actionValue, "role_id": roleId, "workspace_id": workspaceId, "node_id": nodeId}).Exec()
+	if err != nil && !IsDuplicateError(dao.Driver(), err) {
+		fmt.Printf("## Cannot insert ACL using [%s] dialect, error: %s\n", db.Dialect, err.Error())
+		return "", err
+	}
+
+	var id int64
+	found, err := db.From("idm_acl_workspaces").Select("id").Where(
+		goqu.I("node_id").Eq(nodeId),
+		goqu.I("action_name").Eq(actionName),
+		goqu.I("role_id").Eq(roleId),
+		goqu.I("workspace_id").Eq(workspaceId)).ScanVal(&id)
+	if err != nil {
+		return "", err
+	}
+	if !found {
+		return "", fmt.Errorf("could not find ACL")
+	}
+	return fmt.Sprintf("%d", id), nil
 }
 
 // Search in the underlying SQL DB.
@@ -173,6 +234,7 @@ func (dao *sqlimpl) Search(query sql.Enquirer, acls *[]interface{}) error {
 		limit = query.GetLimit()
 	}
 
+	// Prepared will fail with v4 and postgre
 	dataset := db.From(
 		goqu.I("idm_acls").As("a"),
 		goqu.I("idm_acl_nodes").As("n"),
@@ -193,6 +255,13 @@ func (dao *sqlimpl) Search(query sql.Enquirer, acls *[]interface{}) error {
 
 	dataset = dataset.Where(expressions...)
 
+	// rawStr, _, err := dataset.ToSql()
+	// if err != nil {
+	// 	fmt.Println("Cannot translate to SQL ", err.Error())
+	// } else {
+	// 	fmt.Println("Generated SQL ", rawStr)
+	// }
+
 	var items []struct {
 		AclID          string `db:"acl_id"`
 		NodeUUID       string `db:"node_uuid"`
@@ -201,7 +270,9 @@ func (dao *sqlimpl) Search(query sql.Enquirer, acls *[]interface{}) error {
 		RoleUUID       string `db:"role_uuid"`
 		WorkspaceName  string `db:"workspace_name"`
 	}
+
 	if err := dataset.ScanStructs(&items); err != nil {
+		fmt.Println("could not retrieve ACL via search, cause: ", err.Error())
 		return err
 	}
 
@@ -267,120 +338,162 @@ func (dao *sqlimpl) Del(query sql.Enquirer) (int64, error) {
 	return rows, nil
 }
 
-func (dao *sqlimpl) addWorkspace(uuid string) (string, error) {
+// func (dao *sqlimpl) addWorkspace(uuid string) (string, error) {
 
-	if stmt := dao.GetStmt("AddACLWorkspace"); stmt != nil {
+// 	// First try to insert to be as fast as possible
+// 	if stmt := dao.GetStmt("AddACLWorkspace"); stmt != nil {
+// 		var id int64
+// 		err := stmt.QueryRow(uuid).Scan(&id)
+// 		if err != nil && !IsDuplicateError(dao.Driver(), err) {
+// 			fmt.Println("Cannot execute AddACLWorkspace", err.Error())
+// 			return "", err
+// 		}
+// 		if id > 0 {
+// 			return fmt.Sprintf("%d", id), nil
+// 		}
+// 	} else {
+// 		return "", fmt.Errorf("Unknown statement")
+// 	}
 
-		res, err := stmt.Exec(uuid)
-		if err == nil {
-			rows, err := res.RowsAffected()
-			if err != nil {
-				return "", err
-			}
+// 	// Try to retrieve existing when insertion has failed
+// 	var idStr string
+// 	if stmt := dao.GetStmt("GetACLWorkspace"); stmt != nil {
 
-			if rows > 0 {
-				id, err := res.LastInsertId()
-				if err != nil {
-					return "", err
-				}
+// 		row := stmt.QueryRow(uuid)
+// 		if row == nil {
+// 			return "", fmt.Errorf("Did not found workspace")
+// 		}
+// 		row.Scan(&idStr)
+// 	} else {
+// 		return "", fmt.Errorf("Unknown statement")
+// 	}
 
-				return fmt.Sprintf("%d", id), nil
-			}
-		}
-	} else {
-		return "", fmt.Errorf("Unknown statement")
+// 	return idStr, nil
+// }
+
+func (dao *sqlimpl) addWorkspaceWithGoqu(uuid string) (string, error) {
+	db := goqu.New(dao.Driver(), dao.DB())
+
+	_, err := db.From("idm_acl_workspaces").Insert(goqu.Record{"name": uuid}).Exec()
+	if err != nil && !IsDuplicateError(dao.Driver(), err) {
+		fmt.Printf("## Cannot insert using [%s] dialect, error: %s\n", db.Dialect, err.Error())
+		return "", err
 	}
 
-	var id string
-	if stmt := dao.GetStmt("GetACLWorkspace"); stmt != nil {
-
-		row := stmt.QueryRow(uuid)
-		if row == nil {
-			return "", fmt.Errorf("Did not found workspace")
-		}
-		row.Scan(&id)
-	} else {
-		return "", fmt.Errorf("Unknown statement")
+	var id int64
+	found, err := db.From("idm_acl_workspaces").Select("id").Where(goqu.I("name").Eq(uuid)).ScanVal(&id)
+	if err != nil {
+		return "", err
 	}
-
-	return id, nil
+	if !found {
+		return "", fmt.Errorf("Did not found workspace")
+	}
+	return fmt.Sprintf("%d", id), nil
 }
 
-func (dao *sqlimpl) addNode(uuid string) (string, error) {
+// func (dao *sqlimpl) addNode(uuid string) (string, error) {
 
-	if stmt := dao.GetStmt("AddACLNode"); stmt != nil {
+// 	if stmt := dao.GetStmt("AddACLNode"); stmt != nil {
+// 		var id int64
+// 		err := stmt.QueryRow(uuid).Scan(&id)
+// 		if err != nil && !IsDuplicateError(dao.Driver(), err) {
+// 			fmt.Println("Cannot execute AddACLNode", err.Error())
+// 			return "", err
 
-		res, err := stmt.Exec(uuid)
-		if err == nil {
-			rows, err := res.RowsAffected()
-			if err != nil {
-				return "", err
-			}
+// 		}
+// 		if id > 0 {
+// 			return fmt.Sprintf("%d", id), nil
+// 		}
+// 	} else {
+// 		return "", fmt.Errorf("Unknown statement")
+// 	}
 
-			if rows > 0 {
-				id, err := res.LastInsertId()
-				if err != nil {
-					return "", err
-				}
+// 	// Try to retrieve existing when insertion has failed
+// 	var idStr string
+// 	if stmt := dao.GetStmt("GetACLNode"); stmt != nil {
 
-				return fmt.Sprintf("%d", id), nil
-			}
-		}
-	} else {
-		return "", fmt.Errorf("Unknown statement")
+// 		row := stmt.QueryRow(uuid)
+// 		if row == nil {
+// 			return "", fmt.Errorf("Did not found acl node")
+// 		}
+// 		row.Scan(&idStr)
+// 	} else {
+// 		return "", fmt.Errorf("Unknown statement")
+// 	}
+
+// 	return idStr, nil
+// }
+
+func (dao *sqlimpl) addNodeWithGoqu(uuid string) (string, error) {
+	db := goqu.New(dao.Driver(), dao.DB())
+
+	_, err := db.From("idm_acl_nodes").Insert(goqu.Record{"uuid": uuid}).Exec()
+	if err != nil && !IsDuplicateError(dao.Driver(), err) {
+		fmt.Printf("## Cannot insert Node ACL using [%s] dialect, error: %s\n", db.Dialect, err.Error())
+		return "", err
 	}
 
-	// Checking we didn't have a duplicate
-	var id string
-	if stmt := dao.GetStmt("GetACLNode"); stmt != nil {
-
-		row := stmt.QueryRow(uuid)
-		if row == nil {
-			return "", fmt.Errorf("Did not found acl node")
-		}
-		row.Scan(&id)
-	} else {
-		return "", fmt.Errorf("Unknown statement")
+	var id int64
+	found, err := db.From("idm_acl_nodes").Select("id").Where(goqu.I("uuid").Eq(uuid)).ScanVal(&id)
+	if err != nil {
+		return "", err
 	}
-
-	return id, nil
+	if !found {
+		return "", fmt.Errorf("Did not found ACL node")
+	}
+	return fmt.Sprintf("%d", id), nil
 }
 
-func (dao *sqlimpl) addRole(uuid string) (string, error) {
+// func (dao *sqlimpl) addRole(uuid string) (string, error) {
 
-	if stmt := dao.GetStmt("AddACLRole"); stmt != nil {
+// 	if stmt := dao.GetStmt("AddACLRole"); stmt != nil {
+// 		var id int64
+// 		err := stmt.QueryRow(uuid).Scan(&id)
+// 		if err != nil && !IsDuplicateError(dao.Driver(), err) {
+// 			fmt.Println("Cannot execute AddACLRole", err.Error())
+// 			return "", err
+// 		}
+// 		if id > 0 {
+// 			return fmt.Sprintf("%d", id), nil
+// 		}
+// 	} else {
+// 		return "", fmt.Errorf("Unknown statement")
+// 	}
 
-		res, err := stmt.Exec(uuid)
-		if err == nil {
-			rows, err := res.RowsAffected()
-			if err != nil {
-				return "", err
-			}
+// 	// Try to retrieve existing when insertion has failed
+// 	var idStr string
+// 	if stmt := dao.GetStmt("GetACLRole"); stmt != nil {
 
-			if rows > 0 {
-				id, err := res.LastInsertId()
-				if err != nil {
-					return "", err
-				}
+// 		row := stmt.QueryRow(uuid)
+// 		if row == nil {
+// 			return "", fmt.Errorf("Did not found acl role")
+// 		}
+// 		row.Scan(&idStr)
+// 	} else {
+// 		return "", fmt.Errorf("Unknown statement")
+// 	}
 
-				return fmt.Sprintf("%d", id), nil
-			}
-		}
+// 	return idStr, nil
+// }
+
+func (dao *sqlimpl) addRoleWithGoqu(uuid string) (string, error) {
+	db := goqu.New(dao.Driver(), dao.DB())
+
+	_, err := db.From("idm_acl_roles").Insert(goqu.Record{"uuid": uuid}).Exec()
+	if err != nil && !IsDuplicateError(dao.Driver(), err) {
+		fmt.Printf("## Cannot insert Role ACL using [%s] dialect, error: %s\n", db.Dialect, err.Error())
+		return "", err
 	}
 
-	// Checking we didn't have a duplicate
-	var id string
-	if stmt := dao.GetStmt("GetACLRole"); stmt != nil {
-		row := stmt.QueryRow(uuid)
-		if row == nil {
-			return "", fmt.Errorf("Did not found acl role")
-		}
-		row.Scan(&id)
-	} else {
-		return "", fmt.Errorf("Unknown statement")
+	var id int64
+	found, err := db.From("idm_acl_roles").Select("id").Where(goqu.I("uuid").Eq(uuid)).ScanVal(&id)
+	if err != nil {
+		return "", err
 	}
-
-	return id, nil
+	if !found {
+		return "", fmt.Errorf("Did not found ACL role")
+	}
+	return fmt.Sprintf("%d", id), nil
 }
 
 type queryConverter idm.ACLSingleQuery
