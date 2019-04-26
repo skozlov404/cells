@@ -54,7 +54,7 @@ import (
 	"github.com/pydio/cells/common/dao"
 	"github.com/pydio/cells/common/log"
 	"github.com/pydio/cells/common/registry"
-	"github.com/pydio/cells/common/service/context"
+	servicecontext "github.com/pydio/cells/common/service/context"
 	"github.com/pydio/cells/common/sql"
 	net2 "github.com/pydio/cells/common/utils/net"
 )
@@ -235,6 +235,10 @@ func NewService(opts ...ServiceOption) Service {
 
 			switch driver {
 			case "mysql":
+				if c := sql.NewDAO(driver, dsn, prefix); c != nil {
+					d = s.Options().DAO(c)
+				}
+			case "postgres":
 				if c := sql.NewDAO(driver, dsn, prefix); c != nil {
 					d = s.Options().DAO(c)
 				}

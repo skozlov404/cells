@@ -62,6 +62,8 @@ func addConn(d string, dsn string) (Conn, error) {
 		drv = new(mysql)
 	case "sqlite3":
 		drv = new(sqlite)
+	case "postgres":
+		drv = new(postgres)
 	case "boltdb":
 		drv = new(boltdb)
 	default:
