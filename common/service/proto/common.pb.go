@@ -23,7 +23,12 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 import google_protobuf "github.com/golang/protobuf/ptypes/any"
-import _ "github.com/golang/protobuf/ptypes/empty"
+import google_protobuf1 "github.com/golang/protobuf/ptypes/empty"
+
+import (
+	context "golang.org/x/net/context"
+	grpc "google.golang.org/grpc"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -429,6 +434,206 @@ func init() {
 	proto.RegisterEnum("service.OperationType", OperationType_name, OperationType_value)
 	proto.RegisterEnum("service.ResourcePolicyAction", ResourcePolicyAction_name, ResourcePolicyAction_value)
 	proto.RegisterEnum("service.ResourcePolicy_PolicyEffect", ResourcePolicy_PolicyEffect_name, ResourcePolicy_PolicyEffect_value)
+}
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion4
+
+// Client API for Starter service
+
+type StarterClient interface {
+	Start(ctx context.Context, in *google_protobuf1.Empty, opts ...grpc.CallOption) (*google_protobuf1.Empty, error)
+}
+
+type starterClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewStarterClient(cc *grpc.ClientConn) StarterClient {
+	return &starterClient{cc}
+}
+
+func (c *starterClient) Start(ctx context.Context, in *google_protobuf1.Empty, opts ...grpc.CallOption) (*google_protobuf1.Empty, error) {
+	out := new(google_protobuf1.Empty)
+	err := grpc.Invoke(ctx, "/service.Starter/Start", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for Starter service
+
+type StarterServer interface {
+	Start(context.Context, *google_protobuf1.Empty) (*google_protobuf1.Empty, error)
+}
+
+func RegisterStarterServer(s *grpc.Server, srv StarterServer) {
+	s.RegisterService(&_Starter_serviceDesc, srv)
+}
+
+func _Starter_Start_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(google_protobuf1.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StarterServer).Start(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/service.Starter/Start",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StarterServer).Start(ctx, req.(*google_protobuf1.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Starter_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "service.Starter",
+	HandlerType: (*StarterServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Start",
+			Handler:    _Starter_Start_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "common.proto",
+}
+
+// Client API for Service service
+
+type ServiceClient interface {
+	Status(ctx context.Context, in *google_protobuf1.Empty, opts ...grpc.CallOption) (*StatusResponse, error)
+}
+
+type serviceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewServiceClient(cc *grpc.ClientConn) ServiceClient {
+	return &serviceClient{cc}
+}
+
+func (c *serviceClient) Status(ctx context.Context, in *google_protobuf1.Empty, opts ...grpc.CallOption) (*StatusResponse, error) {
+	out := new(StatusResponse)
+	err := grpc.Invoke(ctx, "/service.Service/Status", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for Service service
+
+type ServiceServer interface {
+	Status(context.Context, *google_protobuf1.Empty) (*StatusResponse, error)
+}
+
+func RegisterServiceServer(s *grpc.Server, srv ServiceServer) {
+	s.RegisterService(&_Service_serviceDesc, srv)
+}
+
+func _Service_Status_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(google_protobuf1.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServer).Status(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/service.Service/Status",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServer).Status(ctx, req.(*google_protobuf1.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Service_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "service.Service",
+	HandlerType: (*ServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Status",
+			Handler:    _Service_Status_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "common.proto",
+}
+
+// Client API for Archiver service
+
+type ArchiverClient interface {
+	Archive(ctx context.Context, in *Query, opts ...grpc.CallOption) (*StatusResponse, error)
+}
+
+type archiverClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewArchiverClient(cc *grpc.ClientConn) ArchiverClient {
+	return &archiverClient{cc}
+}
+
+func (c *archiverClient) Archive(ctx context.Context, in *Query, opts ...grpc.CallOption) (*StatusResponse, error) {
+	out := new(StatusResponse)
+	err := grpc.Invoke(ctx, "/service.Archiver/Archive", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for Archiver service
+
+type ArchiverServer interface {
+	Archive(context.Context, *Query) (*StatusResponse, error)
+}
+
+func RegisterArchiverServer(s *grpc.Server, srv ArchiverServer) {
+	s.RegisterService(&_Archiver_serviceDesc, srv)
+}
+
+func _Archiver_Archive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Query)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ArchiverServer).Archive(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/service.Archiver/Archive",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ArchiverServer).Archive(ctx, req.(*Query))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Archiver_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "service.Archiver",
+	HandlerType: (*ArchiverServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Archive",
+			Handler:    _Archiver_Archive_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "common.proto",
 }
 
 func init() { proto.RegisterFile("common.proto", fileDescriptor0) }

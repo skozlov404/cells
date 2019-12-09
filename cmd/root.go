@@ -186,6 +186,8 @@ func init() {
 	flags.Bool("enable_metrics", false, "Instrument code to expose internal metrics")
 	flags.Bool("enable_pprof", false, "Enable pprof remote debugging")
 
+	flags.Bool("experimental", false, "Experimental grpc server")
+
 	viper.BindPFlag("registry", flags.Lookup("registry"))
 	viper.BindPFlag("registry_address", flags.Lookup("registry_address"))
 	viper.BindPFlag("registry_cluster_address", flags.Lookup("registry_cluster_address"))
@@ -204,6 +206,8 @@ func init() {
 
 	viper.BindPFlag("enable_metrics", flags.Lookup("enable_metrics"))
 	viper.BindPFlag("enable_pprof", flags.Lookup("enable_pprof"))
+
+	viper.BindPFlag("experimental", flags.Lookup("experimental"))
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

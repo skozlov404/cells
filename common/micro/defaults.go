@@ -24,9 +24,13 @@ package defaults
 import (
 	"time"
 
+	"github.com/spf13/viper"
+
 	grpcclient "github.com/micro/go-plugins/client/grpc"
 	grpcserver "github.com/micro/go-plugins/server/grpc"
 	httpserver "github.com/micro/go-plugins/server/http"
+
+	experimentalgrpcserver "github.com/pydio/cells/common/micro/server/grpc"
 
 	"github.com/micro/go-micro/broker"
 	"github.com/micro/go-micro/client"
@@ -79,6 +83,12 @@ func NewServer(new ...server.Option) server.Server {
 	opts := new
 	for _, o := range serverOpts {
 		opts = append(opts, o())
+	}
+
+	if viper.GetBool("experimental") {
+		return experimentalgrpcserver.NewServer(
+			opts...,
+		)
 	}
 
 	return grpcserver.NewServer(

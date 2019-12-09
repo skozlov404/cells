@@ -32,9 +32,9 @@ import (
 	"github.com/pydio/cells/common"
 	"github.com/pydio/cells/common/config"
 	"github.com/pydio/cells/common/log"
-	"github.com/pydio/cells/common/micro"
+	defaults "github.com/pydio/cells/common/micro"
 	"github.com/pydio/cells/common/registry"
-	"github.com/pydio/cells/common/service/context"
+	servicecontext "github.com/pydio/cells/common/service/context"
 	proto "github.com/pydio/cells/common/service/proto"
 )
 
@@ -49,6 +49,7 @@ func WithMicro(f func(micro.Service) error) ServiceOption {
 			name := s.Name()
 			ctx := servicecontext.WithServiceName(s.Options().Context, name)
 			var srvOpts []server.Option
+			srvOpts = append(srvOpts, server.Name(name))
 			if o.Port != "" {
 				srvOpts = append(srvOpts, server.Address(":"+o.Port))
 			}
@@ -112,6 +113,7 @@ func WithMicro(f func(micro.Service) error) ServiceOption {
 			// newTraceProvider(s.Options().Micro) // DISABLED FOR NOW DUE TO CONFLICT WITH THE MICRO GO OS
 			newClaimsProvider(s.Options().Micro)
 
+			// proto.RegisterServiceServer(s.Options().Micro.Server(), &StatusHandler{s.Address()})
 			proto.RegisterServiceHandler(s.Options().Micro.Server(), &StatusHandler{s.Address()})
 
 			micro.RegisterSubscriber(common.TOPIC_SERVICE_STOP, s.Options().Micro.Server(), &StopHandler{s})

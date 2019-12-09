@@ -25,13 +25,14 @@ import (
 
 	"github.com/micro/go-micro"
 	"github.com/micro/go-micro/broker"
+	"github.com/micro/go-micro/server"
 	"go.uber.org/zap"
 
 	"github.com/pydio/cells/common"
 	"github.com/pydio/cells/common/log"
-	"github.com/pydio/cells/common/micro"
+	defaults "github.com/pydio/cells/common/micro"
 	"github.com/pydio/cells/common/registry"
-	"github.com/pydio/cells/common/service/context"
+	servicecontext "github.com/pydio/cells/common/service/context"
 	proto "github.com/pydio/cells/common/service/proto"
 )
 
@@ -48,7 +49,7 @@ func WithGeneric(f func(context.Context, context.CancelFunc) (Runner, Checker, S
 
 			s.Options().Micro.Init(
 				micro.Client(defaults.NewClient()),
-				micro.Server(defaults.NewServer()),
+				micro.Server(defaults.NewServer(server.Name(name))),
 				micro.Registry(defaults.Registry()),
 			)
 
