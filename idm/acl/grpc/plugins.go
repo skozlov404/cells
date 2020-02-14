@@ -30,6 +30,7 @@ import (
 	"github.com/pydio/cells/common/proto/tree"
 	"github.com/pydio/cells/common/service"
 	"github.com/pydio/cells/common/utils/meta"
+	"github.com/pydio/cells/common/utils/migrations"
 	"github.com/pydio/cells/idm/acl"
 )
 
@@ -40,7 +41,7 @@ func init() {
 			service.Tag(common.SERVICE_TAG_IDM),
 			service.Description("Access Control List service"),
 			service.WithStorage(acl.NewDAO, "idm_acl"),
-			service.Migrations([]*service.Migration{
+			service.Migrations([]*migrations.Migration{
 				{
 					TargetVersion: service.ValidVersion("1.2.0"),
 					Up:            UpgradeTo120,

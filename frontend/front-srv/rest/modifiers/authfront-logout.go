@@ -30,6 +30,10 @@ func LogoutAuth(middleware frontend.AuthMiddleware) frontend.AuthMiddleware {
 			return middleware(req, rsp, in, out, session)
 		}
 
+		// TODO - need to properly logout in hydra
+		session.Values = make(map[interface{}]interface{})
+		session.Options.MaxAge = 0
+
 		v := auth.DefaultJWTVerifier()
 		_, cl, err := v.Verify(ctx, accessToken.(string))
 		if err != nil {
@@ -45,10 +49,6 @@ func LogoutAuth(middleware frontend.AuthMiddleware) frontend.AuthMiddleware {
 		if err := v.Logout(ctx, req.Request.URL.String(), cl.Subject, cl.SessionID, auth.SetAccessToken(accessToken.(string)), auth.SetRefreshToken(refreshToken.(string))); err != nil {
 			return err
 		}
-
-		// TODO - need to properly logout in hydra
-		session.Values = make(map[interface{}]interface{})
-		session.Options.MaxAge = 0
 
 		return middleware(req, rsp, in, out, session)
 	}
