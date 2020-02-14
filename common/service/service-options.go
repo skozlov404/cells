@@ -33,6 +33,7 @@ import (
 	"github.com/pydio/cells/common/dao"
 	"github.com/pydio/cells/common/registry"
 	"github.com/pydio/cells/common/service/frontend"
+	"github.com/pydio/cells/common/utils/migrations"
 )
 
 type dependency struct {
@@ -54,7 +55,7 @@ type ServiceOptions struct {
 
 	DAO        func(dao.DAO) dao.DAO
 	Prefix     interface{}
-	Migrations []*Migration
+	Migrations []*migrations.Migration
 
 	Port string
 
@@ -124,7 +125,7 @@ func Version(v string) ServiceOption {
 	}
 }
 
-func Migrations(migrations []*Migration) ServiceOption {
+func Migrations(migrations []*migrations.Migration) ServiceOption {
 	return func(o *ServiceOptions) {
 		o.Migrations = migrations
 	}

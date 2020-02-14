@@ -1,24 +1,24 @@
-package config
+package migrations
 
 import (
 	"fmt"
-	"io/ioutil"
-	"path/filepath"
 	"strings"
 
 	"github.com/hashicorp/go-version"
 	"github.com/ory/hydra/x"
-
 	"github.com/pydio/cells/common"
 )
 
-type (
-	configMigration func(config *Config) (bool, error)
-)
+func init() {
+	initialVersion, _ := version.NewVersion("0.0.0")
+	add(initialVersion, getMigration(renameKeys))
+	add(initialVersion, getMigration(setDefaultConfig))
+	add(initialVersion, getMigration(forceDefaultConfig))
+	// add(&migrations.Migration{TargetVersion: common.Version(), Up: getMigration(updateLeCaURL)})
+}
 
-var (
-	configsMigrations []configMigration
-	configKeysRenames = map[string]string{
+func renameKeys(config common.ConfigValues) (bool, error) {
+	return UpdateKeys(config, map[string]string{
 		"services/pydio.api.websocket":            "services/" + common.SERVICE_GATEWAY_NAMESPACE_ + common.SERVICE_WEBSOCKET,
 		"services/pydio.grpc.gateway.data":        "services/" + common.SERVICE_GATEWAY_DATA,
 		"services/pydio.grpc.gateway.proxy":       "services/" + common.SERVICE_GATEWAY_PROXY,
@@ -28,64 +28,10 @@ var (
 		"services/micro.api":                      "services/" + common.SERVICE_MICRO_API,
 		"services/pydio.api.front-plugins":        "services/" + common.SERVICE_WEB_NAMESPACE_ + common.SERVICE_FRONT_STATICS,
 		"services/pydio.grpc.auth/dex/connectors": "services/" + common.SERVICE_WEB_NAMESPACE_ + common.SERVICE_OAUTH + "/connectors",
-	}
-	configKeysDeletes = []string{
-		"services/pydio.grpc.auth/dex",
-	}
-)
-
-func init() {
-	configsMigrations = append(configsMigrations, renameServices1, deleteConfigKeys, setDefaultConfig, forceDefaultConfig, dsnRemoveAllowNativePassword, updateLeCaURL)
+	})
 }
 
-// UpgradeConfigsIfRequired applies all registered configMigration functions
-// Returns true if there was a change and save is required, error if something nasty happened
-func UpgradeConfigsIfRequired(config *Config) (bool, error) {
-	var save bool
-	for _, m := range configsMigrations {
-		s, e := m(config)
-		if e != nil {
-			return false, e
-		}
-		if s {
-			save = true
-		}
-	}
-	return save, nil
-}
-
-func renameServices1(config *Config) (bool, error) {
-	var save bool
-	for oldPath, newPath := range configKeysRenames {
-		oldPaths := strings.Split(oldPath, "/")
-		val := config.Get(oldPaths...)
-		var data interface{}
-		if e := val.Scan(&data); e == nil && data != nil {
-			fmt.Printf("[Configs] Upgrading: renaming key %s to %s\n", oldPath, newPath)
-			config.Set(val, strings.Split(newPath, "/")...)
-			config.Del(oldPaths...)
-			save = true
-		}
-	}
-	return save, nil
-}
-
-func deleteConfigKeys(config *Config) (bool, error) {
-	var save bool
-	for _, oldPath := range configKeysDeletes {
-		oldPaths := strings.Split(oldPath, "/")
-		val := config.Get(oldPaths...)
-		var data interface{}
-		if e := val.Scan(&data); e == nil && data != nil {
-			fmt.Printf("[Configs] Upgrading: deleting key %s\n", oldPath)
-			config.Del(oldPaths...)
-			save = true
-		}
-	}
-	return save, nil
-}
-
-func setDefaultConfig(config *Config) (bool, error) {
+func setDefaultConfig(config common.ConfigValues) (bool, error) {
 	var save bool
 
 	oauthSrv := common.SERVICE_WEB_NAMESPACE_ + common.SERVICE_OAUTH
@@ -97,7 +43,7 @@ func setDefaultConfig(config *Config) (bool, error) {
 		"http://localhost:3000/servers/callback", // SYNC UX DEBUG PORT
 		"http://localhost:[3636-3666]/servers/callback",
 	}
-	external := config.Get("defaults", "url").String("")
+	external := config.String("defaults/url")
 	oAuthFrontendConfig := map[string]interface{}{
 		"client_id":                 "cells-frontend",
 		"client_name":               "CellsFrontend Application",
@@ -154,12 +100,12 @@ func setDefaultConfig(config *Config) (bool, error) {
 	}
 
 	for path, def := range configKeys {
-		paths := strings.Split(path, "/")
-		val := config.Get(paths...)
+		val := config.Values(path)
 		var data interface{}
+
 		if e := val.Scan(&data); e == nil && data == nil {
 			fmt.Printf("[Configs] Upgrading: setting default config %s to %v\n", path, def)
-			config.Set(def, paths...)
+			config.Set(path, def)
 			save = true
 		}
 	}
@@ -167,51 +113,27 @@ func setDefaultConfig(config *Config) (bool, error) {
 	return save, nil
 }
 
-// updateLeCaURL changes the URL of acme API endpoint for Let's Encrypt certificate generation to v2 if it is used.
-func updateLeCaURL(config *Config) (bool, error) {
-
-	caURLKey := "cert/proxy/caUrl"
-	caURLOldValue := "https://acme-v01.api.letsencrypt.org/directory"
-	caURLNewValue := "https://acme-v02.api.letsencrypt.org/directory"
-
-	paths := strings.Split(caURLKey, "/")
-	val := config.Get(paths...)
-
-	var data interface{}
-	save := false
-	if e := val.Scan(&data); e == nil && data != nil {
-		ov := data.(string)
-		if ov == caURLOldValue {
-			fmt.Printf("[Configs] Upgrading: rather use acme v2 API to generate Let's Encrypt certificates\n")
-			config.Set(caURLNewValue, paths...)
-			save = true
-		}
-	}
-	return save, nil
-}
-
-func forceDefaultConfig(config *Config) (bool, error) {
+func forceDefaultConfig(config common.ConfigValues) (bool, error) {
 	var save bool
 	oauthSrv := common.SERVICE_WEB_NAMESPACE_ + common.SERVICE_OAUTH
-	srvUrl := config.Get("defaults", "url").String("")
-	if srvUrl == "" {
-		return false, nil
-	}
+	external := config.String("defaults/url", "")
+	// if external == "" {
+	// 	fmt.Println("Returning")
 
-	external := config.Get("defaults", "url").String("")
+	// 	return false, nil
+	// }
 
 	// Easy finding usage of srvUrl
 	configKeys := map[string]interface{}{
-		"services/" + oauthSrv + "/issuer": srvUrl + "/oidc/",
+		"services/" + oauthSrv + "/issuer": external + "/oidc/",
 	}
 
 	for path, def := range configKeys {
-		paths := strings.Split(path, "/")
-		val := config.Get(paths...)
+		val := config.Values(path)
 		var data interface{}
 		if val.Scan(&data); data != def {
-			fmt.Printf("[Configs] Upgrading: setting default config %s to %v\n", path, def)
-			config.Set(def, paths...)
+			fmt.Printf("[Configs] Upgrading: forcing default config %s to %v\n", path, def)
+			config.Set(path, def)
 			save = true
 		}
 	}
@@ -221,13 +143,12 @@ func forceDefaultConfig(config *Config) (bool, error) {
 	}
 
 	for path, def := range configSliceKeys {
-		paths := strings.Split(path, "/")
-		val := config.Get(paths...)
-		var data []string
+		val := config.Values(path)
 
+		var data []string
 		if val.Scan(&data); !stringSliceEqual(data, def) {
-			fmt.Printf("[Configs] Upgrading: setting default config %s to %v\n", path, def)
-			config.Set(def, paths...)
+			fmt.Printf("[Configs] Upgrading: forcing default config %s to %v\n", path, def)
+			config.Set(path, def)
 			save = true
 		}
 	}
@@ -243,7 +164,7 @@ func forceDefaultConfig(config *Config) (bool, error) {
 	}
 
 	// Special case for srvUrl/oauth2/oob url
-	statics := config.Get("services", oauthSrv, "staticClients")
+	statics := config.Values("services/" + oauthSrv + "staticClients")
 	var data []map[string]interface{}
 	if err := statics.Scan(&data); err == nil {
 		var saveStatics bool
@@ -259,14 +180,14 @@ func forceDefaultConfig(config *Config) (bool, error) {
 				if redirs, ok := static[n].([]interface{}); ok {
 					var newRedirs []string
 					for _, redir := range redirs {
-						if strings.HasSuffix(redir.(string), "/oauth2/oob") && redir.(string) != srvUrl+"/oauth2/oob" {
-							newRedirs = append(newRedirs, srvUrl+"/oauth2/oob")
+						if strings.HasSuffix(redir.(string), "/oauth2/oob") && redir.(string) != external+"/oauth2/oob" {
+							newRedirs = append(newRedirs, external+"/oauth2/oob")
 							saveStatics = true
-						} else if strings.HasSuffix(redir.(string), "/auth/callback") && redir.(string) != srvUrl+"/auth/callback" {
-							newRedirs = append(newRedirs, srvUrl+"/auth/callback")
+						} else if strings.HasSuffix(redir.(string), "/auth/callback") && redir.(string) != external+"/auth/callback" {
+							newRedirs = append(newRedirs, external+"/auth/callback")
 							saveStatics = true
-						} else if strings.HasSuffix(redir.(string), "/auth/logout") && redir.(string) != srvUrl+"/auth/logout" {
-							newRedirs = append(newRedirs, srvUrl+"/auth/logout")
+						} else if strings.HasSuffix(redir.(string), "/auth/logout") && redir.(string) != external+"/auth/logout" {
+							newRedirs = append(newRedirs, external+"/auth/logout")
 							saveStatics = true
 						} else {
 							newRedirs = append(newRedirs, redir.(string))
@@ -282,7 +203,7 @@ func forceDefaultConfig(config *Config) (bool, error) {
 		}
 		if saveStatics {
 			fmt.Println("[Configs] Upgrading: updating staticClients")
-			config.Set(data, "services", oauthSrv, "staticClients")
+			config.Set("services/"+oauthSrv+"staticClients", data)
 			save = true
 		}
 	}
@@ -290,53 +211,25 @@ func forceDefaultConfig(config *Config) (bool, error) {
 	return save, nil
 }
 
-// dsnRemoveAllowNativePassword removes this part from default DSN
-func dsnRemoveAllowNativePassword(config *Config) (bool, error) {
-	testFile := filepath.Join(ApplicationWorkingDir(ApplicationDirServices), common.SERVICE_GRPC_NAMESPACE_+common.SERVICE_CONFIG, "version")
-	if data, e := ioutil.ReadFile(testFile); e == nil && len(data) > 0 {
-		ref, _ := version.NewVersion("1.4.1")
-		if v, e2 := version.NewVersion(strings.TrimSpace(string(data))); e2 == nil && v.LessThan(ref) {
-			dbId := config.Get("defaults", "database").String("")
-			if dbId != "" {
-				if dsn := config.Get("databases", dbId, "dsn").String(""); dsn != "" && strings.Contains(dsn, "allowNativePasswords=false\u0026") {
-					dsn = strings.Replace(dsn, "allowNativePasswords=false\u0026", "", 1)
-					fmt.Println("[Configs] Upgrading DSN to support new MySQL authentication plugin")
-					config.Set(dsn, "databases", dbId, "dsn")
-					return true, nil
-				}
-			}
-		}
-	}
-	return false, nil
-}
+// // updateLeCaURL changes the URL of acme API endpoint for Let's Encrypt certificate generation to v2 if it is used.
+// func updateLeCaURL(config common.ConfigValues) (bool, error) {
 
-// Do not append to the standard migration, it is called directly inside the
-// Vault/once.Do() routine, otherwise it locks config
-func migrateVault(vault *Config, defaultConfig *Config) bool {
-	var save bool
+// 	caURLKey := "cert/proxy/caUrl"
+// 	caURLOldValue := "https://acme-v01.api.letsencrypt.org/directory"
+// 	caURLNewValue := "https://acme-v02.api.letsencrypt.org/directory"
 
-	for _, path := range registeredVaultKeys {
-		confValue := defaultConfig.Get(path...).String("")
-		if confValue != "" && vault.Get(confValue).String("") == "" {
-			u := NewKeyForSecret()
-			fmt.Printf("[Configs] Upgrading %s to vault key %s\n", strings.Join(path, "/"), u)
-			vaultSource.Set(u, confValue, true)
-			defaultConfig.Set(u, path...)
-			save = true
-		}
-	}
+// 	paths := strings.Split(caURLKey, "/")
+// 	val := config.Get(paths...)
 
-	return save
-}
-
-func stringSliceEqual(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i, v := range a {
-		if v != b[i] {
-			return false
-		}
-	}
-	return true
-}
+// 	var data interface{}
+// 	save := false
+// 	if e := val.Scan(&data); e == nil && data != nil {
+// 		ov := data.(string)
+// 		if ov == caURLOldValue {
+// 			fmt.Printf("[Configs] Upgrading: rather use acme v2 API to generate Let's Encrypt certificates\n")
+// 			config.Set(caURLNewValue, paths...)
+// 			save = true
+// 		}
+// 	}
+// 	return save, nil
+// }

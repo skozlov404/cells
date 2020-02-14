@@ -75,7 +75,7 @@ func GetGenericStoreClientConfig(storeNamespace string) (dataSource string, buck
 	if err := config2.Default().Get("services", configKey).Scan(&cfg); err != nil {
 		return "", "", err
 	}
-	if cfg == nil {
+	if cfg.IsEmpty() {
 		return "", "", errors.NotFound(VIEWS_LIBRARY_NAME, "Cannot find default config for services")
 	}
 

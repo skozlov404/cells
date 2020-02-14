@@ -70,12 +70,8 @@ func ListSourcesFromConfig() map[string]*object.DataSource {
 
 // SourceNamesForDataServices list sourceNames from the config, excluding the timestamp key
 func SourceNamesForDataServices(dataSrvType string) []string {
-	var res []string
-	var cfgMap Map
-	if err := Get("services", common.SERVICE_GRPC_NAMESPACE_+dataSrvType).Scan(&cfgMap); err == nil {
-		return SourceNamesFromDataConfigs(cfgMap)
-	}
-	return res
+	conf := Values("services", common.SERVICE_GRPC_NAMESPACE_+dataSrvType)
+	return SourceNamesFromDataConfigs(conf)
 }
 
 // SourceNamesForDataServices list sourceNames from the config, excluding the timestamp key

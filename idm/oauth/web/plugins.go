@@ -36,6 +36,7 @@ import (
 
 	"github.com/pydio/cells/common"
 	"github.com/pydio/cells/common/auth"
+	"github.com/pydio/cells/common/config"
 	defaults "github.com/pydio/cells/common/micro"
 	"github.com/pydio/cells/common/plugins"
 	"github.com/pydio/cells/common/service"
@@ -57,6 +58,7 @@ func init() {
 			service.Tag(common.SERVICE_TAG_IDM),
 			service.Description("OAuth Provider"),
 			service.WithStorage(oauth.NewDAO),
+			service.Dependency(common.SERVICE_GRPC_NAMESPACE_+common.SERVICE_OAUTH, []string{}),
 			service.WithGeneric(func(ctx context.Context, cancel context.CancelFunc) (service.Runner, service.Checker, service.Stopper, error) {
 				return service.RunnerFunc(func() error {
 						return nil
@@ -113,6 +115,9 @@ func serve(s service.Service) (micro.Option, error) {
 func initialize(s service.Service) error {
 
 	ctx := s.Options().Context
+
+	// Configuration
+	auth.InitConfiguration(config.Values("services", common.SERVICE_WEB_NAMESPACE_+common.SERVICE_OAUTH))
 
 	// Registry
 	auth.InitRegistry(servicecontext.GetDAO(ctx).(sql.DAO))

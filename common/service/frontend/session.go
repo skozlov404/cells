@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	SessionTimeoutMinutes = 24
+	SessionTimeoutMinutes = 1
 )
 
 var sessionStore *sessions.CookieStore

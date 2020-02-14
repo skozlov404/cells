@@ -75,13 +75,7 @@ var SampleConfig = `{
         "pydio.grpc.auth":{
             "dsn": "default",
             "dex" : {
-                "connectors": [
-                    {
-                        "type": "pydio",
-                        "id"  : "pydio",
-                        "name": "Pydio Cells"
-                    }
-                ]
+                
             }
         },
         "pydio.grpc.tree":{
@@ -134,6 +128,13 @@ var SampleConfig = `{
 					"allowedOrigins": "*"
 				}
 			},
+			"connectors": [
+				{
+					"type": "pydio",
+					"id"  : "pydio",
+					"name": "Pydio Cells"
+				}
+			],
 			"staticClients": [
                 {
 					"client_id": "cells-frontend",

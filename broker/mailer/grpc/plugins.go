@@ -32,11 +32,12 @@ import (
 	"github.com/pydio/cells/common"
 	"github.com/pydio/cells/common/config"
 	"github.com/pydio/cells/common/log"
-	"github.com/pydio/cells/common/micro"
+	defaults "github.com/pydio/cells/common/micro"
 	"github.com/pydio/cells/common/proto/jobs"
 	"github.com/pydio/cells/common/proto/mailer"
 	"github.com/pydio/cells/common/service"
-	"github.com/pydio/cells/common/service/context"
+	servicecontext "github.com/pydio/cells/common/service/context"
+	"github.com/pydio/cells/common/utils/migrations"
 	wconfig "github.com/pydio/go-os/config"
 )
 
@@ -56,7 +57,7 @@ func init() {
 			service.Description("MailSender Service"),
 			service.Dependency(common.SERVICE_GRPC_NAMESPACE_+common.SERVICE_JOBS, []string{}),
 			service.Unique(true),
-			service.Migrations([]*service.Migration{
+			service.Migrations([]*migrations.Migration{
 				{
 					TargetVersion: service.FirstRun(),
 					Up:            RegisterQueueJob,

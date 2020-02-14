@@ -36,10 +36,11 @@ import (
 	"github.com/pydio/cells/common"
 	"github.com/pydio/cells/common/config"
 	"github.com/pydio/cells/common/log"
-	"github.com/pydio/cells/common/micro"
+	defaults "github.com/pydio/cells/common/micro"
 	"github.com/pydio/cells/common/plugins"
 	"github.com/pydio/cells/common/service"
 	"github.com/pydio/cells/common/service/frontend"
+	"github.com/pydio/cells/common/utils/migrations"
 	"github.com/pydio/cells/frontend/front-srv/web/index"
 )
 
@@ -56,7 +57,7 @@ func init() {
 			service.Name(Name),
 			service.Tag(common.SERVICE_TAG_FRONTEND),
 			service.Description("WEB service for serving statics"),
-			service.Migrations([]*service.Migration{
+			service.Migrations([]*migrations.Migration{
 				{
 					TargetVersion: service.ValidVersion("1.2.0"),
 					Up:            DropLegacyStatics,
