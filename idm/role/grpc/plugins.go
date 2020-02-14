@@ -28,7 +28,8 @@ import (
 	"github.com/pydio/cells/common"
 	"github.com/pydio/cells/common/proto/idm"
 	"github.com/pydio/cells/common/service"
-	"github.com/pydio/cells/common/service/context"
+	servicecontext "github.com/pydio/cells/common/service/context"
+	"github.com/pydio/cells/common/utils/migrations"
 	"github.com/pydio/cells/idm/role"
 )
 
@@ -39,7 +40,7 @@ func init() {
 			service.Tag(common.SERVICE_TAG_IDM),
 			service.Description("Roles Service"),
 			service.Dependency(common.SERVICE_GRPC_NAMESPACE_+common.SERVICE_ACL, []string{}),
-			service.Migrations([]*service.Migration{
+			service.Migrations([]*migrations.Migration{
 				{
 					TargetVersion: service.FirstRun(),
 					Up:            InitRoles,

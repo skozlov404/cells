@@ -32,7 +32,7 @@ import (
 	"github.com/pydio/cells/common/proto/idm"
 	"github.com/pydio/cells/common/proto/tree"
 	"github.com/pydio/cells/common/service"
-	"github.com/pydio/cells/common/service/context"
+	servicecontext "github.com/pydio/cells/common/service/context"
 	service2 "github.com/pydio/cells/common/service/proto"
 	meta2 "github.com/pydio/cells/common/utils/meta"
 	"github.com/pydio/cells/idm/meta"

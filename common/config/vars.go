@@ -42,7 +42,9 @@ import (
 	"github.com/pydio/cells/common/config/envvar"
 	file2 "github.com/pydio/cells/common/config/file"
 	"github.com/pydio/cells/common/config/memory"
+	"github.com/pydio/cells/common/config/migrations"
 	"github.com/pydio/cells/common/config/remote"
+	"github.com/pydio/cells/common/utils/std"
 )
 
 var (
@@ -118,7 +120,10 @@ func Default() config.Config {
 				config.PollInterval(10*time.Second),
 			)}
 
-			if save, e := UpgradeConfigsIfRequired(defaultConfig); e == nil && save {
+			m := NewMap()
+			defaultConfig.Unmarshal(m)
+
+			if save, e := migrations.UpgradeConfigsIfRequired(m); e == nil && save {
 				e2 := saveConfig(defaultConfig, common.PYDIO_SYSTEM_USERNAME, "Configs upgrades applied")
 				if e2 != nil {
 					fmt.Println("[Configs] Error while saving upgraded configs")
@@ -248,9 +253,9 @@ func (c *Config) UnmarshalKey(key string, val interface{}) error {
 	return c.Config.Get(key).Scan(&val)
 }
 func Values(keys ...string) common.ConfigValues {
-	var m Map
+	m := std.NewMap()
 
-	err := Default().Get(keys[0 : len(keys)-1]...).Scan(&m)
+	err := Default().Get(keys[0 : len(keys)-1]...).Scan(m)
 	if err != nil {
 		fmt.Println("Error converting map", err)
 		return nil
@@ -267,4 +272,23 @@ func GetJsonPath() string {
 func GetRemoteSource() bool {
 	<-configLoaded
 	return viper.GetString("registry_cluster_routes") != ""
+}
+
+// Do not append to the standard migration, it is called directly inside the
+// Vault/once.Do() routine, otherwise it locks config
+func migrateVault(vault *Config, defaultConfig *Config) bool {
+	var save bool
+
+	for _, path := range registeredVaultKeys {
+		confValue := defaultConfig.Get(path...).String("")
+		if confValue != "" && vault.Get(confValue).String("") == "" {
+			u := NewKeyForSecret()
+			fmt.Printf("[Configs] Upgrading %s to vault key %s\n", strings.Join(path, "/"), u)
+			vaultSource.Set(u, confValue, true)
+			defaultConfig.Set(u, path...)
+			save = true
+		}
+	}
+
+	return save
 }

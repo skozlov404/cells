@@ -195,7 +195,7 @@ var mandatoryOptions = []ServiceOption{
 	AfterInit(func(s Service) error {
 		ctx := s.Options().Context
 
-		cfg := make(config.Map)
+		cfg := config.NewMap()
 
 		if err := config.Get("services", s.Name()).Scan(&cfg); err != nil {
 			log.Logger(ctx).Error("", zap.Error(err))
@@ -203,7 +203,7 @@ var mandatoryOptions = []ServiceOption{
 		}
 
 		if cfg == nil {
-			cfg = make(config.Map)
+			cfg = config.NewMap()
 		}
 
 		// Retrieving and assigning port to the config

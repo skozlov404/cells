@@ -21,53 +21,53 @@
 package config
 
 import (
+	"fmt"
 	"log"
-	"sync"
+
+	"github.com/pydio/cells/common"
+	"github.com/pydio/cells/common/utils/std"
+	"github.com/spf13/cast"
 )
 
-var (
-	databaseOnce  = &sync.Once{}
-	defaultDriver string
-	defaultDSN    string
-	databases     Map
-)
-
-func loadDatabases() {
-	Get("databases").Scan(&databases)
-
-	if defaultDbKey := Get("defaults", "database").String(""); defaultDbKey != "" {
-		if _, ok := databases[defaultDbKey]; ok {
-			sMap := databases.StringMap(defaultDbKey)
-			if d, o := sMap["driver"]; o {
-				defaultDriver = d
-			}
-			if d, o := sMap["dsn"]; o {
-				defaultDSN = d
-			}
-		}
+func getDatabaseFromRef(name string) (string, string, error) {
+	var databases map[string]*std.Database
+	err := Values("databases").Scan(&databases)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	// If no database is found, there's a config issue!
-	// But do not stop here, it should be checked at the cmd level (services-start.go),
-	// as we don't have a way to throw back the error (log.Fatal silently breaks)
-	if defaultDriver == "" {
-		log.Println("[FATAL] Could not find default database! Please make sure that databases are correctly configured and started.")
+	if v, ok := databases[name]; ok {
+		return v.Driver, v.DSN, nil
 	}
-}
 
-// GetDefaultDatabase returns the information for the default database
-func GetDefaultDatabase() (string, string) {
-	databaseOnce.Do(func() {
-		loadDatabases()
-	})
-	return defaultDriver, defaultDSN
+	return "", "", fmt.Errorf("not found")
 }
 
 // GetDatabase retrieves the database data from the config
-func GetDatabase(name string) (string, string) {
-	databaseOnce.Do(func() {
-		loadDatabases()
-	})
+func GetDatabase(conf common.ConfigValues) (string, string) {
+	fmt.Println(conf.Get())
+	switch v := conf.Get().(type) {
+	case string:
+		drv, dsn, err := getDatabaseFromRef(v)
+		if err != nil {
+			break
+		}
 
-	return databases.Database(name)
+		return drv, dsn
+	default:
+		m, err := cast.ToStringMapStringE(v)
+		if err != nil {
+			break
+		}
+
+		return m["drv"], m["dsn"]
+	}
+
+	defaultDBKey := Values("defaults").String("database", "")
+	drv, dsn, err := getDatabaseFromRef(defaultDBKey)
+	if err != nil {
+		log.Fatal("[FATAL] Could not find default database! Please make sure that databases are correctly configured and started.")
+	}
+
+	return drv, dsn
 }

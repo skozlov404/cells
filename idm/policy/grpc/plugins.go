@@ -36,7 +36,8 @@ import (
 	"github.com/pydio/cells/common/log"
 	"github.com/pydio/cells/common/proto/idm"
 	"github.com/pydio/cells/common/service"
-	"github.com/pydio/cells/common/service/context"
+	servicecontext "github.com/pydio/cells/common/service/context"
+	"github.com/pydio/cells/common/utils/migrations"
 	"github.com/pydio/cells/idm/policy"
 )
 
@@ -47,7 +48,7 @@ func init() {
 			service.Tag(common.SERVICE_TAG_IDM),
 			service.Description("Policy Engine Service"),
 			service.WithStorage(policy.NewDAO, "idm_policy"),
-			service.Migrations([]*service.Migration{
+			service.Migrations([]*migrations.Migration{
 				{
 					TargetVersion: service.FirstRun(),
 					Up:            InitDefaults,

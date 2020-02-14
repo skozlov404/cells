@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"net/url"
 	"time"
 
@@ -67,7 +68,6 @@ func GetConfigurationProvider() ConfigurationProvider {
 }
 
 func NewProvider(rootURL string, values common.ConfigValues) ConfigurationProvider {
-	drv, dsn := values.Database("dsn")
 	return &configurationProvider{
 		r:          rootURL,
 		v:          values,
@@ -76,8 +76,6 @@ func NewProvider(rootURL string, values common.ConfigValues) ConfigurationProvid
 		oidc:       values.Values("oidc"),
 		clients:    values.Array("staticClients"),
 		connectors: values.Array("connectors"),
-		drv:        drv,
-		dsn:        dsn,
 	}
 }
 
@@ -129,11 +127,13 @@ func (v *configurationProvider) CORSOptions(iface string) cors.Options {
 }
 
 func (v *configurationProvider) DSN() string {
-	return v.drv + "://" + v.dsn
+	drv, dsn := v.v.Database("dsn")
+	return drv + "://" + dsn
 }
 
 func (v *configurationProvider) DataSourcePlugin() string {
-	return v.drv + "://" + v.dsn
+	drv, dsn := v.v.Database("dsn")
+	return drv + "://" + dsn
 }
 
 func (v *configurationProvider) BCryptCost() int {
@@ -214,6 +214,7 @@ func (v *configurationProvider) GetRotatedSystemSecrets() [][]byte {
 }
 
 func (v *configurationProvider) GetSystemSecret() []byte {
+	fmt.Println("Secret is ", string(v.v.Bytes("secret", []byte{})))
 	return v.v.Bytes("secret", []byte{})
 }
 

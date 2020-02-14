@@ -358,7 +358,7 @@ func (h *Handler) CreateAuthCode(ctx context.Context, in *pauth.CreateAuthCodeRe
 
 	if err != nil {
 		e := fosite.ErrorToRFC6749Error(err)
-		log.Logger(ctx).Error("Could not create authorize response", zap.Error(e), zap.String("debug", e.Debug))
+		log.Logger(ctx).Error("Could not create authorize response", zap.Error(e), zap.String("hint", e.Hint), zap.String("debug", e.Debug))
 		return err
 	}
 

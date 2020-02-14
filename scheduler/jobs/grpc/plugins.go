@@ -38,6 +38,7 @@ import (
 	proto "github.com/pydio/cells/common/proto/jobs"
 	log2 "github.com/pydio/cells/common/proto/log"
 	"github.com/pydio/cells/common/service"
+	"github.com/pydio/cells/common/utils/migrations"
 	"github.com/pydio/cells/scheduler/jobs"
 )
 
@@ -54,7 +55,7 @@ func init() {
 			service.Description("Store for scheduler jobs description"),
 			service.Unique(true),
 			service.Fork(true),
-			service.Migrations([]*service.Migration{
+			service.Migrations([]*migrations.Migration{
 				{
 					TargetVersion: service.ValidVersion("1.4.0"),
 					Up: func(ctx context.Context) error {

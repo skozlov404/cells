@@ -37,7 +37,7 @@ import (
 	"github.com/pydio/cells/common/forms"
 	"github.com/pydio/cells/common/log"
 	proto "github.com/pydio/cells/common/proto/mailer"
-	"github.com/pydio/cells/common/service/context"
+	servicecontext "github.com/pydio/cells/common/service/context"
 )
 
 type Handler struct {
@@ -210,11 +210,7 @@ func (h *Handler) parseConf(conf common.ConfigValues) (queueName string, queueCo
 
 	// Parse configs for sender
 	var senderConf map[string]interface{}
-	if s := conf.String("sender"); s != "" {
-		json.Unmarshal([]byte(s), &senderConf)
-	} else if m := conf.Map("sender"); m != nil {
-		senderConf = m
-	}
+	conf.Values("sender").Scan(senderConf)
 	if senderConf != nil {
 		senderConfig = config.Map{}
 		var name string
