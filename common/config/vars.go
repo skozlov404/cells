@@ -292,3 +292,22 @@ func migrateVault(vault *Config, defaultConfig *Config) bool {
 
 	return save
 }
+
+// Do not append to the standard migration, it is called directly inside the
+// Vault/once.Do() routine, otherwise it locks config
+func migrateVault(vault *Config, defaultConfig *Config) bool {
+	var save bool
+
+	for _, path := range registeredVaultKeys {
+		confValue := defaultConfig.Get(path...).String("")
+		if confValue != "" && vault.Get(confValue).String("") == "" {
+			u := NewKeyForSecret()
+			fmt.Printf("[Configs] Upgrading %s to vault key %s\n", strings.Join(path, "/"), u)
+			vaultSource.Set(u, confValue, true)
+			defaultConfig.Set(u, path...)
+			save = true
+		}
+	}
+
+	return save
+}
