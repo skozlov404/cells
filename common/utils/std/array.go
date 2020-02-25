@@ -31,27 +31,39 @@ import (
 	"github.com/spf13/cast"
 )
 
-type Array []interface{}
+type Array struct {
+	v []interface{}
+	p interface{} // Reference to parent for assignment
+	k interface{} // Reference to key for re-assignment
+}
 
-// NewArray variable
-func NewArray(as ...[]interface{}) Array {
-	if len(as) > 0 {
-		return Array(as[0])
+// // NewArray variable
+// func NewArray(as ...[]interface{}) Array {
+// 	if len(as) > 0 {
+// 		return Array(as[0])
+// 	}
+// 	var a Array
+// 	return a
+// }
+
+func (c *Array) Get() interface{} {
+	return c.v
+}
+
+func (c *Array) Set(v interface{}) error {
+	if c == nil {
+		return fmt.Errorf("Value doesn't exist")
 	}
-	var a Array
-	return a
-}
+	fmt.Println("Setting here ", v)
+	if m, ok := c.p.(Map); ok {
+		m[c.k.(string)] = v
+	}
 
-func (c Array) Get() interface{} {
-	return c
-}
-
-func (c Array) Set(v interface{}) error {
-	fmt.Println("Setting ? ")
+	c.v = v.([]interface{})
 	return nil
 }
 
-func (c Array) Values(k ...common.Key) common.ConfigValues {
+func (c *Array) Values(k ...common.Key) common.ConfigValues {
 	keys := keysToString(k...)
 
 	if len(keys) == 0 {
@@ -63,11 +75,11 @@ func (c Array) Values(k ...common.Key) common.ConfigValues {
 		return (*Value)(nil)
 	}
 
-	if len(c) <= idx {
+	if len(c.v) <= idx {
 		return (*Value)(nil)
 	}
 
-	v := c[idx]
+	v := c.v[idx]
 
 	keys = keys[1:]
 
@@ -75,14 +87,10 @@ func (c Array) Values(k ...common.Key) common.ConfigValues {
 		return (Map)(m).Values(keys)
 	}
 
-	if a, err := cast.ToSliceE(v); err == nil {
-		return (Array)(a).Values(keys)
-	}
-
 	return (&Value{v, c, idx}).Values(keys)
 }
 
-func (c Array) Scan(val interface{}) error {
+func (c *Array) Scan(val interface{}) error {
 	jsonStr, err := json.Marshal(c)
 	if err != nil {
 		return err
