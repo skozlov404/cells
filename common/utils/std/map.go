@@ -130,12 +130,12 @@ func (c Map) Values(k ...common.Key) common.ConfigValues {
 	}
 
 	if a, err := cast.ToSliceE(v); err == nil {
-		return Array(a).Values(keys[1:])
+		return (&Array{a, c, keys[0]}).Values(keys[1:])
 	}
 
-	if a, ok := v.(Array); ok {
-		return Array(a).Values(keys[1:])
-	}
+	// if a, ok := v.(Array); ok {
+	// 	return (&Array{a, c, keys[0]}).Values(keys[1:])
+	// }
 
 	return (&Value{v, c, keys[0]}).Values(keys[1:])
 }
