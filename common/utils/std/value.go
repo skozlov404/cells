@@ -22,12 +22,12 @@ func (v *Value) Get() interface{} {
 	if v == nil {
 		return nil
 	}
-	if m, ok := v.p.(Map); ok {
-		return m[v.k.(string)]
-	}
-	if a, ok := v.p.(Array); ok {
-		return a[v.k.(int)]
-	}
+	// if m, ok := v.p.(Map); ok {
+	// 	return m[v.k.(string)]
+	// }
+	// if a, ok := v.p.(Array); ok {
+	// 	return a.Values(v.k).Get()
+	// }
 	return v.v
 }
 
@@ -35,16 +35,18 @@ func (v *Value) Set(data interface{}) error {
 	if v == nil {
 		return fmt.Errorf("Value doesn't exist")
 	}
+	fmt.Println("Setting ", reflect.TypeOf(v.p))
 	if m, ok := v.p.(Map); ok {
 		m[v.k.(string)] = data
 	}
-	fmt.Println("v.p ", reflect.TypeOf(v.p), v.k, data)
-	if a, ok := v.p.(Array); ok {
-		a[v.k.(int)] = data
-		fmt.Println(a)
+	if a, ok := v.p.(*Array); ok {
+		old := a.Get().([]interface{})
+		old[v.k.(int)] = data
+		// fmt.Println("YO ", a.Get())
+		//a[v.k.(int)] = data
+		a.Set(old)
 	}
 
-	fmt.Println("HERE ", v)
 	v.v = data
 	return nil
 }
@@ -77,8 +79,3 @@ func (v *Value) Scan(val interface{}) error {
 
 	return err
 }
-
-// func (v *Value) String() string {
-
-// 	return ""
-// }

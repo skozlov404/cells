@@ -42,7 +42,7 @@ func TestStd(t *testing.T) {
 		So(m.Values("service", "array"), ShouldNotBeNil)
 		So(m.Values("service", "array", "1").Get(), ShouldEqual, 2)
 		So(m.Values("service", "array", 1).Get(), ShouldEqual, 2)
-		So(m.Values("service", "array", 1, 2).Get(), ShouldBeNil)
+		So(m.Values("service", "array", 5).Get(), ShouldBeNil)
 
 		So(m.Values("service/array[1]").Get(), ShouldEqual, 2)
 		So(m.Values("service/array[1][2]").Get(), ShouldBeNil)
