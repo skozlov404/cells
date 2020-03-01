@@ -133,65 +133,9 @@ func (c Map) Values(k ...common.Key) common.ConfigValues {
 		return (&Array{a, c, keys[0]}).Values(keys[1:])
 	}
 
-	// if a, ok := v.(Array); ok {
-	// 	return (&Array{a, c, keys[0]}).Values(keys[1:])
-	// }
-
 	return (&Value{v, c, keys[0]}).Values(keys[1:])
 }
 
 func (c Map) IsEmpty() bool {
 	return len(c) == 0
 }
-
-// Set sets the key to value. It replaces any existing
-// values.
-// func (c Map) Set(key common.Key, value interface{}) error {
-// 	keys := keysToString(key)
-// 	pkeys := keys[0 : len(keys)-1]
-// 	tkey := keys[len(keys)-1]
-
-// 	// Retrieving existing lowest index in map
-// 	var i = 0
-// 	for i = 0; i < len(pkeys); i++ {
-// 		if c.Get(pkeys[0:i+1]) == nil {
-// 			break
-// 		}
-// 	}
-
-// 	cursor := c.Get(pkeys[0:i])
-
-// 	mcursor, ok := cursor.(Map)
-// 	if !ok {
-// 		return fmt.Errorf("Existing index is not a map")
-// 	}
-
-// 	// Building remaining key with an empty value
-// 	var j = 0
-// 	for j = i; j < len(pkeys); j++ {
-// 		mcursor[pkeys[j]] = map[string]interface{}{}
-// 		mcursor = mcursor[pkeys[j]].(map[string]interface{})
-// 	}
-
-// 	// Finally set the target key
-// 	mcursor[tkey] = value
-
-// 	return nil
-// }
-
-// Del deletes the values associated with key.
-// func (c Map) Del(key common.Key) error {
-// 	keys := keysToString(key)
-// 	pkeys := keys[0 : len(keys)-1]
-// 	tkey := keys[len(keys)-1]
-
-// 	cursor := c.Get(pkeys)
-// 	mcursor, ok := cursor.(map[string]interface{})
-// 	if !ok {
-// 		return fmt.Errorf("Existing index is not a map")
-// 	}
-
-// 	delete(mcursor, tkey)
-
-// 	return nil
-// }

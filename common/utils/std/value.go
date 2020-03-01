@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"reflect"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
@@ -22,12 +21,6 @@ func (v *Value) Get() interface{} {
 	if v == nil {
 		return nil
 	}
-	// if m, ok := v.p.(Map); ok {
-	// 	return m[v.k.(string)]
-	// }
-	// if a, ok := v.p.(Array); ok {
-	// 	return a.Values(v.k).Get()
-	// }
 	return v.v
 }
 
@@ -35,15 +28,12 @@ func (v *Value) Set(data interface{}) error {
 	if v == nil {
 		return fmt.Errorf("Value doesn't exist")
 	}
-	fmt.Println("Setting ", reflect.TypeOf(v.p))
 	if m, ok := v.p.(Map); ok {
 		m[v.k.(string)] = data
 	}
 	if a, ok := v.p.(*Array); ok {
 		old := a.Get().([]interface{})
 		old[v.k.(int)] = data
-		// fmt.Println("YO ", a.Get())
-		//a[v.k.(int)] = data
 		a.Set(old)
 	}
 

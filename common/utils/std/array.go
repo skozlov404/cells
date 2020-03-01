@@ -37,15 +37,6 @@ type Array struct {
 	k interface{} // Reference to key for re-assignment
 }
 
-// // NewArray variable
-// func NewArray(as ...[]interface{}) Array {
-// 	if len(as) > 0 {
-// 		return Array(as[0])
-// 	}
-// 	var a Array
-// 	return a
-// }
-
 func (c *Array) Get() interface{} {
 	return c.v
 }
@@ -54,7 +45,6 @@ func (c *Array) Set(v interface{}) error {
 	if c == nil {
 		return fmt.Errorf("Value doesn't exist")
 	}
-	fmt.Println("Setting here ", v)
 	if m, ok := c.p.(Map); ok {
 		m[c.k.(string)] = v
 	}
