@@ -2,7 +2,6 @@ package std
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -104,7 +103,12 @@ func TestStd(t *testing.T) {
 		So(m.Values("service", "array2").Set(make([]interface{}, 2)), ShouldBeNil)
 		So(m.Values("service", "array2", "val").Set("test"), ShouldNotBeNil) // Array should have int index
 		So(m.Values("service", "array2", "0").Set("test"), ShouldBeNil)      // Array should have int index
-		fmt.Println("Array ", m.Values("service", "array2"))
 		So(m.Values("service", "array2", "0").Get(), ShouldEqual, "test")
+		So(m.Values("service", "array2", "1").Set(map[string]interface{}{
+			"val": "test",
+		}), ShouldBeNil)
+		So(m.Values("service", "array2", "1", "val").Get(), ShouldEqual, "test")
+		So(m.Values("service", "array2", "1", "val2").Set("test2"), ShouldBeNil)
+		So(m.Values("service", "array2", "1", "val2").Get(), ShouldEqual, "test2")
 	})
 }
