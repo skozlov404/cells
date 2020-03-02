@@ -76,7 +76,7 @@ func SourceNamesForDataServices(dataSrvType string) []string {
 
 // SourceNamesForDataServices list sourceNames from the config, excluding the timestamp key
 func SourceNamesFromDataConfigs(cfgMap common.ConfigValues) []string {
-	names := cfgMap.StringArray("sources")
+	names := cfgMap.Values("sources").Get().StringArray()
 	return SourceNamesFiltered(names)
 }
 

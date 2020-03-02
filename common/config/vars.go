@@ -102,7 +102,7 @@ func Default() config.Config {
 				config.PollInterval(10*time.Second),
 			)}
 
-			m := NewMap()
+			m := new(std.Map)
 			defaultConfig.Unmarshal(m)
 
 			if save, e := migrations.UpgradeConfigsIfRequired(m); e == nil && save {
@@ -229,16 +229,17 @@ func (c *Config) Unmarshal(val interface{}) error {
 func (c *Config) UnmarshalKey(key string, val interface{}) error {
 	return c.Config.Get(key).Scan(&val)
 }
-func Values(keys ...string) common.ConfigValues {
-	m := std.NewMap()
 
-	err := Default().Get(keys[0 : len(keys)-1]...).Scan(m)
+func Values(keys ...common.Key) common.ConfigValues {
+	m := new(std.Map)
+
+	err := Default().Get().Scan(m)
 	if err != nil {
 		fmt.Println("Error converting map", err)
 		return nil
 	}
 
-	return m.Values(keys[len(keys)-1])
+	return m.Values(keys...)
 }
 
 // GetJsonPath build path for json that contain the local config

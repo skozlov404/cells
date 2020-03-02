@@ -55,7 +55,9 @@ func getMigration(f migrationFunc) migrationConfigFunc {
 // Returns true if there was a change and save is required, error if something nasty happened
 func UpgradeConfigsIfRequired(config common.ConfigValues) (bool, error) {
 
-	lastVersion, err := version.NewVersion(config.String("version", "0.0.0"))
+	v := config.Values("version")
+
+	lastVersion, err := version.NewVersion(v.Default("0.0.0").String())
 	if err != nil {
 		return false, err
 	}
@@ -83,7 +85,7 @@ func UpgradeConfigsIfRequired(config common.ConfigValues) (bool, error) {
 		return false, nil
 	}
 
-	err = config.Set("version", appliedVersion.String())
+	err = v.Set(appliedVersion.String())
 
 	return true, nil
 }
@@ -92,11 +94,11 @@ func UpgradeConfigsIfRequired(config common.ConfigValues) (bool, error) {
 func UpdateKeys(config common.ConfigValues, m map[string]string) (bool, error) {
 	var save bool
 	for oldPath, newPath := range m {
-		val := config.Get(oldPath)
+		val := config.Values(oldPath)
 		if val != nil {
 			fmt.Printf("[Configs] Upgrading: renaming key %s to %s\n", oldPath, newPath)
-			config.Set(newPath, val)
-			config.Del(oldPath)
+			config.Values(newPath).Set(val.Get())
+			val.Del()
 			save = true
 		}
 	}
@@ -131,7 +133,7 @@ func UpdateVals(config common.ConfigValues, m map[string]string) (bool, error) {
 		return save, nil
 	}
 
-	config.Set("", all)
+	config.Set(all)
 
 	return true, nil
 }
@@ -143,7 +145,7 @@ func deleteConfigKeys(config common.ConfigValues) (bool, error) {
 		var data interface{}
 		if e := val.Scan(&data); e == nil && data != nil {
 			fmt.Printf("[Configs] Upgrading: deleting key %s\n", oldPath)
-			config.Del(oldPath)
+			val.Del()
 			save = true
 		}
 	}

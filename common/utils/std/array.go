@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
@@ -37,19 +38,35 @@ type Array struct {
 	k interface{} // Reference to key for re-assignment
 }
 
-func (c *Array) Get() interface{} {
-	return c.v
+func (c *Array) Get() common.ConfigValue {
+	return &def{c.v}
+}
+
+func (c *Array) Default(i interface{}) common.ConfigValue {
+	return c.Get().Default(i)
 }
 
 func (c *Array) Set(v interface{}) error {
 	if c == nil {
 		return fmt.Errorf("Value doesn't exist")
 	}
-	if m, ok := c.p.(Map); ok {
-		m[c.k.(string)] = v
+	if m, ok := c.p.(*Map); ok {
+		m.v[c.k.(string)] = v
 	}
 
 	c.v = v.([]interface{})
+	return nil
+}
+
+func (c *Array) Del() error {
+	if c == nil {
+		return fmt.Errorf("Value doesn't exist")
+	}
+	if m, ok := c.p.(*Map); ok {
+		delete(m.v, c.k.(string))
+	}
+
+	c.v = nil
 	return nil
 }
 
@@ -58,6 +75,16 @@ func (c *Array) Values(k ...common.Key) common.ConfigValues {
 
 	if len(keys) == 0 {
 		return c
+	}
+
+	// Specific handling for pointers
+	if keys[0] == "#" {
+		if c.p != nil {
+			if v, ok := c.p.(common.ConfigValues); ok {
+				return v.Values(keys)
+			}
+		}
+		return c.Values(keys[1:])
 	}
 
 	idx, err := cast.ToIntE(keys[0])
@@ -74,7 +101,7 @@ func (c *Array) Values(k ...common.Key) common.ConfigValues {
 	keys = keys[1:]
 
 	if m, err := cast.ToStringMapE(v); err == nil {
-		return (Map)(m).Values(keys)
+		return (&Map{m, c, idx}).Values(keys)
 	}
 
 	return (&Value{v, c, idx}).Values(keys)
@@ -94,4 +121,32 @@ func (c *Array) Scan(val interface{}) error {
 	}
 
 	return err
+}
+
+func (c *Array) Bool() bool {
+	return c.Default(false).Bool()
+}
+func (c *Array) Int() int {
+	return c.Default(0).Int()
+}
+func (c *Array) Int64() int64 {
+	return c.Default(0).Int64()
+}
+func (c *Array) Duration() time.Duration {
+	return c.Default(0 * time.Second).Duration()
+}
+func (c *Array) String() string {
+	return c.Default("").String()
+}
+func (c *Array) StringMap() map[string]string {
+	return c.Default(map[string]string{}).StringMap()
+}
+func (c *Array) StringArray() []string {
+	return c.Default([]string{}).StringArray()
+}
+func (c *Array) Slice() []interface{} {
+	return c.Default([]interface{}{}).Slice()
+}
+func (c *Array) Map() map[string]interface{} {
+	return c.Default(map[string]interface{}{}).Map()
 }
