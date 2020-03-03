@@ -33,7 +33,7 @@ import (
 	"github.com/pydio/cells/common"
 	"github.com/pydio/cells/common/proto/encryption"
 	"github.com/pydio/cells/common/sql"
-	"github.com/rubenv/sql-migrate"
+	migrate "github.com/rubenv/sql-migrate"
 )
 
 var (
@@ -84,7 +84,7 @@ func (h *sqlimpl) Init(options common.ConfigValues) error {
 	}
 
 	// Preparing the db statements
-	if options.Bool("prepare", true) {
+	if options.Values("prepare").Default(true).Bool() {
 		for key, query := range queries {
 			if err := h.Prepare(key, query); err != nil {
 				log.Logger(context.Background()).Error("failed to prepare statement", zap.String("name", key), zap.Error(err))

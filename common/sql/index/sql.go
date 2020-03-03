@@ -257,7 +257,7 @@ func (dao *IndexSQL) Init(options common.ConfigValues) error {
 		return err
 	}
 
-	if prepare, ok := options.Get("prepare").(bool); !ok || prepare {
+	if prepare := options.Values("prepare").Default(true).Bool(); prepare {
 		for key, query := range queries {
 			if err := dao.Prepare(key, query); err != nil {
 				return err

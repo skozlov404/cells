@@ -9,6 +9,10 @@ import (
 
 var (
 	data = []byte(`{
+		"defaults": {
+			"val": "test",
+			"val2": "test2"
+		},
 		"service": {
 			"val": "test",
 			"map": {
@@ -20,6 +24,12 @@ var (
 				"map": {
 					"val": "test"
 				}
+			}],
+			"pointerMap": {
+				"val": {"$ref": "#/defaults/val"}
+			},
+			"pointerArray": [{
+				"$ref": "#/defaults/val2"
 			}]
 		}
 	}`)
@@ -34,28 +44,28 @@ func TestStd(t *testing.T) {
 		So(m.Values("service").Get(), ShouldNotBeNil)
 		So(m.Values("fakeservice").Get(), ShouldBeNil)
 
-		So(m.Values("service/val").Get(), ShouldEqual, "test")
-		So(m.Values("service", "val").Get(), ShouldEqual, "test")
+		So(m.Values("service/val").Get().String(), ShouldEqual, "test")
+		So(m.Values("service", "val").Get().String(), ShouldEqual, "test")
 		So(m.Values("service", "fakeval").Get(), ShouldBeNil)
 
 		So(m.Values("service", "array"), ShouldNotBeNil)
-		So(m.Values("service", "array", "1").Get(), ShouldEqual, 2)
-		So(m.Values("service", "array", 1).Get(), ShouldEqual, 2)
+		So(m.Values("service", "array", "1").Get().Int(), ShouldEqual, 2)
+		So(m.Values("service", "array", 1).Get().Int(), ShouldEqual, 2)
 		So(m.Values("service", "array", 5).Get(), ShouldBeNil)
 
-		So(m.Values("service/array[1]").Get(), ShouldEqual, 2)
+		So(m.Values("service/array[1]").Get().Int(), ShouldEqual, 2)
 		So(m.Values("service/array[1][2]").Get(), ShouldBeNil)
 		So(m.Values("service/array[1][2]").Get(), ShouldBeNil)
 
-		So(m.Values("service/arrayMap[0]/val").Get(), ShouldEqual, "test")
+		So(m.Values("service/arrayMap[0]/val").Get().String(), ShouldEqual, "test")
 		So(m.Values("service/arrayMap[0]/fakeval").Get(), ShouldBeNil)
 		So(m.Values("service/arrayMap[1]/val").Get(), ShouldBeNil)
-		So(m.Values("service/arrayMap[0]/map/val").Get(), ShouldEqual, "test")
-		So(m.Values("service/arrayMap[0]/map[val]").Get(), ShouldEqual, "test")
+		So(m.Values("service/arrayMap[0]/map/val").Get().String(), ShouldEqual, "test")
+		So(m.Values("service/arrayMap[0]/map[val]").Get().String(), ShouldEqual, "test")
 	})
 
 	Convey("Testing map full set", t, func() {
-		m := NewMap()
+		var m Map
 
 		err := m.Set(data)
 		So(err, ShouldBeNil)
@@ -63,28 +73,28 @@ func TestStd(t *testing.T) {
 		So(m.Values("service").Get(), ShouldNotBeNil)
 		So(m.Values("fakeservice").Get(), ShouldBeNil)
 
-		So(m.Values("service/val").Get(), ShouldEqual, "test")
-		So(m.Values("service", "val").Get(), ShouldEqual, "test")
+		So(m.Values("service/val").Get().String(), ShouldEqual, "test")
+		So(m.Values("service", "val").Get().String(), ShouldEqual, "test")
 		So(m.Values("service", "fakeval").Get(), ShouldBeNil)
 
 		So(m.Values("service", "array"), ShouldNotBeNil)
-		So(m.Values("service", "array", "1").Get(), ShouldEqual, 2)
-		So(m.Values("service", "array", 1).Get(), ShouldEqual, 2)
+		So(m.Values("service", "array", "1").Get().Int(), ShouldEqual, 2)
+		So(m.Values("service", "array", 1).Get().Int(), ShouldEqual, 2)
 		So(m.Values("service", "array", 1, 2).Get(), ShouldBeNil)
 
-		So(m.Values("service/array[1]").Get(), ShouldEqual, 2)
+		So(m.Values("service/array[1]").Get().Int(), ShouldEqual, 2)
 		So(m.Values("service/array[1][2]").Get(), ShouldBeNil)
 		So(m.Values("service/array[1][2]").Get(), ShouldBeNil)
 
-		So(m.Values("service/arrayMap[0]/val").Get(), ShouldEqual, "test")
+		So(m.Values("service/arrayMap[0]/val").Get().String(), ShouldEqual, "test")
 		So(m.Values("service/arrayMap[0]/fakeval").Get(), ShouldBeNil)
 		So(m.Values("service/arrayMap[1]/val").Get(), ShouldBeNil)
-		So(m.Values("service/arrayMap[0]/map/val").Get(), ShouldEqual, "test")
-		So(m.Values("service/arrayMap[0]/map[val]").Get(), ShouldEqual, "test")
+		So(m.Values("service/arrayMap[0]/map/val").Get().String(), ShouldEqual, "test")
+		So(m.Values("service/arrayMap[0]/map[val]").Get().String(), ShouldEqual, "test")
 	})
 
 	Convey("Testing replacing a string value", t, func() {
-		m := NewMap()
+		var m Map
 		m.Set(data)
 
 		// Replacing a value
@@ -95,20 +105,46 @@ func TestStd(t *testing.T) {
 
 		So(m.Values("service", "fakemap", "val").Set("test"), ShouldNotBeNil) // Should throw an error
 		So(m.Values("service", "map", "val2").Set("test3"), ShouldBeNil)      // Should not throw an error
-		So(m.Values("service", "map", "val2").Get(), ShouldEqual, "test3")
+		So(m.Values("service", "map", "val2").Get().String(), ShouldEqual, "test3")
 
-		So(m.Values("service", "map2").Set(NewMap()), ShouldBeNil)
+		So(m.Values("service", "map2").Set(make(map[string]interface{})), ShouldBeNil)
 		So(m.Values("service", "map2", "val").Set("test"), ShouldBeNil)
-		So(m.Values("service", "map2", "val").Get(), ShouldEqual, "test")
+		So(m.Values("service", "map2", "val").Get().String(), ShouldEqual, "test")
 		So(m.Values("service", "array2").Set(make([]interface{}, 2)), ShouldBeNil)
 		So(m.Values("service", "array2", "val").Set("test"), ShouldNotBeNil) // Array should have int index
 		So(m.Values("service", "array2", "0").Set("test"), ShouldBeNil)      // Array should have int index
-		So(m.Values("service", "array2", "0").Get(), ShouldEqual, "test")
+		So(m.Values("service", "array2", "0").Get().String(), ShouldEqual, "test")
 		So(m.Values("service", "array2", "1").Set(map[string]interface{}{
 			"val": "test",
 		}), ShouldBeNil)
-		So(m.Values("service", "array2", "1", "val").Get(), ShouldEqual, "test")
+		So(m.Values("service", "array2", "1", "val").Get().String(), ShouldEqual, "test")
 		So(m.Values("service", "array2", "1", "val2").Set("test2"), ShouldBeNil)
-		So(m.Values("service", "array2", "1", "val2").Get(), ShouldEqual, "test2")
+		So(m.Values("service", "array2", "1", "val2").Get().String(), ShouldEqual, "test2")
+	})
+
+	Convey("Testing default get", t, func() {
+		var m Map
+		err := json.Unmarshal(data, &m)
+		So(err, ShouldBeNil)
+
+		So(m.Values("service/val").Default("").String(), ShouldEqual, "test")
+		So(m.Values("service/fakeval").Default("").String(), ShouldEqual, "")
+		So(m.Values("service/array[1]").Default(0).Int(), ShouldEqual, 2)
+		So(m.Values("service/array[5]").Default(0).Int(), ShouldEqual, 0)
+		So(m.Values("service/array[fakeval]").Default(0).Int(), ShouldEqual, 0)
+	})
+}
+
+func TestReference(t *testing.T) {
+	Convey("Testing reference", t, func() {
+		var m Map
+		err := json.Unmarshal(data, &m)
+		So(err, ShouldBeNil)
+
+		So(m.Values("service/pointerMap/val").Get().String(), ShouldEqual, "test")
+		So(m.Values("service/pointerMap/val").Default("").String(), ShouldEqual, "test")
+		So(m.Values("service/pointerArray[0]").Default("").String(), ShouldEqual, "test2")
+
+		So(m.Values("service/pointerMap/val2").Default(Reference("#/defaults/val2")).String(), ShouldEqual, "test2")
 	})
 }

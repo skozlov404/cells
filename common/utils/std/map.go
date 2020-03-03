@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
@@ -34,15 +35,10 @@ import (
 )
 
 // Map structure to store configuration
-type Map map[string]interface{}
-
-// NewMap variable
-func NewMap(ms ...map[string]interface{}) Map {
-	if len(ms) > 0 {
-		return Map(ms[0])
-	}
-	m := make(Map)
-	return m
+type Map struct {
+	v map[string]interface{}
+	p interface{} // Reference to parent for assignment
+	k interface{} // Reference to key for re-assignment
 }
 
 func keysToString(k ...common.Key) []string {
@@ -68,28 +64,46 @@ func keysToString(k ...common.Key) []string {
 	return r
 }
 
-func (c Map) Get() interface{} {
-	return c
+func (c *Map) Get() common.ConfigValue {
+	// Checking if we have a pointer
+	if ref, ok := c.v["$ref"]; ok {
+		return c.Values(ref).Get()
+	}
+	return &def{c.v}
 }
 
-func (c Map) Set(data interface{}) error {
+func (c *Map) Default(i interface{}) common.ConfigValue {
+	cc := c.Get()
+	if cc == nil {
+		return &def{nil}
+	}
+	return cc.Default(i)
+}
+
+func (c *Map) Set(data interface{}) error {
 
 	switch v := data.(type) {
 	case []byte:
 		return json.Unmarshal(v, &c)
 	case map[string]interface{}:
-		for k := range c {
-			delete(c, k)
+		for k := range c.v {
+			delete(c.v, k)
 		}
 		for k, vv := range v {
-			c[k] = vv
+			c.v[k] = vv
 		}
 	}
 
 	return nil
 }
 
-func (c Map) Scan(val interface{}) error {
+func (c *Map) Del() error {
+	c.v = nil
+
+	return nil
+}
+
+func (c *Map) Scan(val interface{}) error {
 	if c.IsEmpty() {
 		return nil
 	}
@@ -109,33 +123,76 @@ func (c Map) Scan(val interface{}) error {
 	return err
 }
 
-func (c Map) Values(k ...common.Key) common.ConfigValues {
+func (c *Map) Values(k ...common.Key) common.ConfigValues {
 	keys := keysToString(k...)
 
 	if len(keys) == 0 {
 		return c
 	}
 
-	v, ok := c[keys[0]]
+	// Specific handling for pointers
+	idx := keys[0]
+	if idx == "#" {
+		if c.p != nil {
+			if v, ok := c.p.(common.ConfigValues); ok {
+				return v.Values(keys)
+			}
+		}
+		return c.Values(keys[1:])
+	}
+
+	v, ok := c.v[idx]
 	if !ok {
 		return (&Value{nil, c, keys[0]}).Values(keys[1:])
 	}
 
 	if m, err := cast.ToStringMapE(v); err == nil {
-		return Map(m).Values(keys[1:])
+		return (&Map{m, c, idx}).Values(keys[1:])
 	}
 
-	if m, ok := v.(Map); ok {
-		return Map(m).Values(keys[1:])
+	if m, ok := v.(*Map); ok {
+		return m.Values(keys[1:])
 	}
 
 	if a, err := cast.ToSliceE(v); err == nil {
-		return (&Array{a, c, keys[0]}).Values(keys[1:])
+		return (&Array{a, c, idx}).Values(keys[1:])
 	}
 
-	return (&Value{v, c, keys[0]}).Values(keys[1:])
+	return (&Value{v, c, idx}).Values(keys[1:])
 }
 
-func (c Map) IsEmpty() bool {
-	return len(c) == 0
+func (c *Map) IsEmpty() bool {
+	return len(c.v) == 0
+}
+
+func (c *Map) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &c.v)
+}
+
+func (c *Map) Bool() bool {
+	return c.Default(false).Bool()
+}
+func (c *Map) Int() int {
+	return c.Default(0).Int()
+}
+func (c *Map) Int64() int64 {
+	return c.Default(0).Int64()
+}
+func (c *Map) Duration() time.Duration {
+	return c.Default(0 * time.Second).Duration()
+}
+func (c *Map) String() string {
+	return c.Default("").String()
+}
+func (c *Map) StringMap() map[string]string {
+	return c.Default(map[string]string{}).StringMap()
+}
+func (c *Map) StringArray() []string {
+	return c.Default([]string{}).StringArray()
+}
+func (c *Map) Slice() []interface{} {
+	return c.Default([]interface{}{}).Slice()
+}
+func (c *Map) Map() map[string]interface{} {
+	return c.Default(map[string]interface{}{}).Map()
 }

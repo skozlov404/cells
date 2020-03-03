@@ -44,7 +44,7 @@ var (
 )
 
 func InitConfiguration(values common.ConfigValues) {
-	externalURL := config.Get("defaults", "url").String("")
+	externalURL := config.Values("defaults/url").String()
 
 	conf = NewProvider(externalURL, values)
 
@@ -80,7 +80,7 @@ func NewProvider(rootURL string, values common.ConfigValues) ConfigurationProvid
 }
 
 func (v *configurationProvider) InsecureRedirects() []string {
-	return v.v.StringArray("insecureRedirects", []string{})
+	return v.v.StringArray("insecureRedirects")
 }
 
 func (v *configurationProvider) WellKnownKeys(include ...string) []string {
@@ -94,7 +94,7 @@ func (v *configurationProvider) WellKnownKeys(include ...string) []string {
 }
 
 func (v *configurationProvider) ServesHTTPS() bool {
-	return v.v.Bool("https", false)
+	return v.v.Values("https").Bool()
 }
 
 func (v *configurationProvider) IsUsingJWTAsAccessTokens() bool {
@@ -102,27 +102,27 @@ func (v *configurationProvider) IsUsingJWTAsAccessTokens() bool {
 }
 
 func (v *configurationProvider) SubjectTypesSupported() []string {
-	return v.v.StringArray("subjectTypesSupported", []string{"public"})
+	return v.v.Values("subjectTypesSupported").Default([]string{"public"}).StringArray()
 }
 
 func (v *configurationProvider) DefaultClientScope() []string {
-	return v.v.StringArray("defaultClientScope", []string{"offline_access", "offline", "openid", "pydio", "email"})
+	return v.v.Values("defaultClientScope").Default([]string{"offline_access", "offline", "openid", "pydio", "email"}).StringArray()
 }
 
 func (v *configurationProvider) CORSEnabled(iface string) bool {
-	return v.cors.Values(iface).IsEmpty()
+	return v.cors.Values(iface) != nil
 }
 
 func (v *configurationProvider) CORSOptions(iface string) cors.Options {
 	return cors.Options{
-		AllowedOrigins:     v.cors.Values(iface).StringArray("allowedOrigins"),
-		AllowedMethods:     v.cors.Values(iface).StringArray("allowedMethods"),
-		AllowedHeaders:     v.cors.Values(iface).StringArray("allowedHeaders"),
-		ExposedHeaders:     v.cors.Values(iface).StringArray("exposedHeaders"),
-		AllowCredentials:   v.cors.Values(iface).Bool("allowCredentials", true),
-		OptionsPassthrough: v.cors.Values(iface).Bool("optionsPassthrough", false),
-		MaxAge:             v.cors.Values(iface).Int("maxAge", 0),
-		Debug:              v.cors.Values(iface).Bool("debug", false),
+		AllowedOrigins:     v.cors.Values(iface, "allowedOrigins").StringArray(),
+		AllowedMethods:     v.cors.Values(iface, "allowedMethods").StringArray(),
+		AllowedHeaders:     v.cors.Values(iface, "allowedHeaders").StringArray(),
+		ExposedHeaders:     v.cors.Values(iface, "exposedHeaders").StringArray(),
+		AllowCredentials:   v.cors.Values(iface, "allowCredentials").Default(true).Bool(),
+		OptionsPassthrough: v.cors.Values(iface, "optionsPassthrough").Bool(),
+		MaxAge:             v.cors.Values(iface, "maxAge").Int(),
+		Debug:              v.cors.Values(iface, "debug").Bool(),
 	}
 }
 

@@ -43,7 +43,7 @@ type Queue interface {
 }
 
 type Sender interface {
-	Configure(ctx context.Context, conf config.Map) error
+	Configure(ctx context.Context, conf common.ConfigValues) error
 	Send(email *mailer.Mail) error
 	Check(ctx context.Context) error
 }
@@ -64,7 +64,7 @@ func GetQueue(ctx context.Context, t string, conf common.ConfigValues) Queue {
 	return nil
 }
 
-func GetSender(t string, conf config.Map) (Sender, error) {
+func GetSender(t string, conf common.ConfigValues) (Sender, error) {
 
 	var sender Sender
 

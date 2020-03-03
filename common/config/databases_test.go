@@ -11,7 +11,7 @@ import (
 var (
 	data = []byte(`{
 		"defaults": {
-			"database": "test"
+			"database": {"$ref": "#/databases/test"}
 		},
 		"databases": {
 			"test": {
@@ -19,8 +19,10 @@ var (
 				"dsn": "testdsn"
 			}
 		},
-		"service": {
-			"database": "test"
+		"service1": {
+			"database": {"$ref": "#/databases/test"}
+		},
+		"service2": {
 		}
 	}`)
 )
@@ -37,8 +39,12 @@ func TestDatabase(t *testing.T) {
 	once.Do(func() {})
 
 	Convey("Testing initial upgrade of config", t, func() {
-		driver, dsn := GetDatabase(Values("service", "database"))
-		So(driver, ShouldEqual, "testdriver")
-		So(dsn, ShouldEqual, "testdsn")
+		db := Values("service1", "database").StringMap()
+		So(db["driver"], ShouldEqual, "testdriver")
+		So(db["dsn"], ShouldEqual, "testdsn")
+
+		db2 := Values("service1", "database").Default("#/databases/test").StringMap()
+		So(db2["driver"], ShouldEqual, "testdriver")
+		So(db2["dsn"], ShouldEqual, "testdsn")
 	})
 }

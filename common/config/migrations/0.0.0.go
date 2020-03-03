@@ -43,7 +43,7 @@ func setDefaultConfig(config common.ConfigValues) (bool, error) {
 		"http://localhost:3000/servers/callback", // SYNC UX DEBUG PORT
 		"http://localhost:[3636-3666]/servers/callback",
 	}
-	external := config.String("defaults/url")
+	external := config.Values("defaults/url").Default("").String()
 	oAuthFrontendConfig := map[string]interface{}{
 		"client_id":                 "cells-frontend",
 		"client_name":               "CellsFrontend Application",
@@ -105,7 +105,7 @@ func setDefaultConfig(config common.ConfigValues) (bool, error) {
 
 		if e := val.Scan(&data); e == nil && data == nil {
 			fmt.Printf("[Configs] Upgrading: setting default config %s to %v\n", path, def)
-			config.Set(path, def)
+			val.Set(def)
 			save = true
 		}
 	}
@@ -116,12 +116,7 @@ func setDefaultConfig(config common.ConfigValues) (bool, error) {
 func forceDefaultConfig(config common.ConfigValues) (bool, error) {
 	var save bool
 	oauthSrv := common.SERVICE_WEB_NAMESPACE_ + common.SERVICE_OAUTH
-	external := config.String("defaults/url", "")
-	// if external == "" {
-	// 	fmt.Println("Returning")
-
-	// 	return false, nil
-	// }
+	external := config.Values("defaults/url").Default("").String()
 
 	// Easy finding usage of srvUrl
 	configKeys := map[string]interface{}{
@@ -133,7 +128,7 @@ func forceDefaultConfig(config common.ConfigValues) (bool, error) {
 		var data interface{}
 		if val.Scan(&data); data != def {
 			fmt.Printf("[Configs] Upgrading: forcing default config %s to %v\n", path, def)
-			config.Set(path, def)
+			val.Set(def)
 			save = true
 		}
 	}
@@ -148,7 +143,7 @@ func forceDefaultConfig(config common.ConfigValues) (bool, error) {
 		var data []string
 		if val.Scan(&data); !stringSliceEqual(data, def) {
 			fmt.Printf("[Configs] Upgrading: forcing default config %s to %v\n", path, def)
-			config.Set(path, def)
+			val.Set(def)
 			save = true
 		}
 	}
@@ -203,7 +198,7 @@ func forceDefaultConfig(config common.ConfigValues) (bool, error) {
 		}
 		if saveStatics {
 			fmt.Println("[Configs] Upgrading: updating staticClients")
-			config.Set("services/"+oauthSrv+"staticClients", data)
+			config.Values("services/" + oauthSrv + "staticClients").Set(data)
 			save = true
 		}
 	}

@@ -1,6 +1,8 @@
 package common
 
 import (
+	"time"
+
 	"github.com/pydio/go-os/config"
 )
 
@@ -14,26 +16,31 @@ type Watcher interface {
 
 type Key interface{}
 
-type ConfigValues interface {
-	Get() interface{}
-	Set(value interface{}) error
-	//Del(key Key) error
+type ConfigValue interface {
+	Default(interface{}) ConfigValue
 
-	// Bool(key Key, def ...bool) bool
-	// Bytes(key Key, def ...[]byte) []byte
-	// Int(key Key, def ...int) int
-	// Int64(key Key, def ...int64) int64
-	// Duration(key Key, def ...string) time.Duration
-	// String(key Key, def ...string) string
-	// StringMap(key Key) map[string]string
-	// StringArray(key Key, def ...[]string) []string
-	// // Map(key Key) map[string]interface{}
-	// Array(key Key) Scanner
+	Bool() bool
+	// Bytes() []byte
+	Int() int
+	Int64() int64
+	Duration() time.Duration
+	String() string
+	StringMap() map[string]string
+	StringArray() []string
+	Slice() []interface{}
+	Map() map[string]interface{}
+	// Database() Database
+
+	// Scanner
+}
+
+type ConfigValues interface {
+	Get() ConfigValue
+	Set(value interface{}) error
+	Del() error
 	Values(key ...Key) ConfigValues
 
-	// Database(k Key, refs map[string]Database, def ...Database) (Database, error)
-
-	// IsEmpty() bool
+	ConfigValue
 
 	Scanner
 }

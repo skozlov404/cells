@@ -28,7 +28,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/pydio/cells/common/config"
+	"github.com/pydio/cells/common"
 	"github.com/pydio/cells/common/proto/mailer"
 )
 
@@ -36,9 +36,9 @@ type Sendmail struct {
 	BinPath string
 }
 
-func (s *Sendmail) Configure(ctx context.Context, config config.Map) error {
+func (s *Sendmail) Configure(ctx context.Context, config common.ConfigValues) error {
 	s.BinPath = "/usr/bin/mail"
-	if str, ok := config.Get("executable").(string); ok && str != "" {
+	if str := config.Values("executable").String(); str != "" {
 		s.BinPath = str
 	}
 	return nil

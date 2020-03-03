@@ -21,53 +21,18 @@
 package config
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/pydio/cells/common"
-	"github.com/pydio/cells/common/utils/std"
 	"github.com/spf13/cast"
 )
 
-func getDatabaseFromRef(name string) (string, string, error) {
-	var databases map[string]*std.Database
-	err := Values("databases").Scan(&databases)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if v, ok := databases[name]; ok {
-		return v.Driver, v.DSN, nil
-	}
-
-	return "", "", fmt.Errorf("not found")
-}
-
 // GetDatabase retrieves the database data from the config
 func GetDatabase(conf common.ConfigValues) (string, string) {
-	fmt.Println(conf.Get())
-	switch v := conf.Get().(type) {
-	case string:
-		drv, dsn, err := getDatabaseFromRef(v)
-		if err != nil {
-			break
-		}
 
-		return drv, dsn
-	default:
-		m, err := cast.ToStringMapStringE(v)
-		if err != nil {
-			break
-		}
-
-		return m["drv"], m["dsn"]
-	}
-
-	defaultDBKey := Values("defaults").String("database", "")
-	drv, dsn, err := getDatabaseFromRef(defaultDBKey)
+	v := conf.Get()
+	m, err := cast.ToStringMapStringE(v)
 	if err != nil {
-		log.Fatal("[FATAL] Could not find default database! Please make sure that databases are correctly configured and started.")
+		return "", ""
 	}
 
-	return drv, dsn
+	return m["drv"], m["dsn"]
 }
