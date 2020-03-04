@@ -76,7 +76,7 @@ func (s *sqlimpl) Init(options common.ConfigValues) error {
 		return err
 	}
 	// Preparing the db statements
-	if options.Bool("prepare", true) {
+	if options.Values("prepare").Default(true).Bool() {
 		for key, query := range queries {
 			if err := s.Prepare(key, query); err != nil {
 				return err

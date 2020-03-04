@@ -10,7 +10,6 @@ import (
 	"github.com/jinzhu/copier"
 
 	"github.com/pydio/cells/common"
-	"github.com/pydio/cells/common/config"
 )
 
 type Plugin interface {
@@ -226,14 +225,9 @@ func (plugin *Cplugin) PluginEnabled(status RequestStatus) bool {
 	if c != nil && c.Bool(enabled) != enabled {
 		enabled = c.Bool(enabled)
 	}
-	if p := status.AclParameters.Get(plugin.GetId()); p != nil {
-		params := p.(*config.Map)
-		if p2 := params.Get("PYDIO_PLUGIN_ENABLED"); p2 != nil {
-			values := p2.(*config.Map)
-			for _, scope := range status.WsScopes {
-				enabled = values.Bool(scope, enabled) // Take last value
-			}
-		}
+
+	for _, scope := range status.WsScopes {
+		enabled = status.AclParameters.Values(plugin.GetId(), "PYDIO_PLUGIN_ENABLED", scope).Default(enabled).Bool()
 	}
 
 	return enabled
@@ -244,14 +238,9 @@ func (plugin *Cplugin) FilterActions(status RequestStatus, pool *PluginsPool, ac
 	for _, action := range actions {
 		actionName := action.Attrname
 		aclValue := true
-		if p := status.AclActions.Get(plugin.GetId()); p != nil {
-			actions := p.(*config.Map)
-			if p2 := actions.Get(actionName); p2 != nil {
-				values := p2.(*config.Map)
-				for _, scope := range status.WsScopes {
-					aclValue = values.Bool(scope, aclValue) // Take last value
-				}
-			}
+
+		for _, scope := range status.WsScopes {
+			enabled = status.AclActions.Values(plugin.GetId(), actionName, scope).Default(aclValue).Bool()
 		}
 		if !aclValue {
 			continue
@@ -294,14 +283,6 @@ func (plugin *Cplugin) PluginConfig(status RequestStatus, param *Cglobal_param) 
 
 	var val interface{}
 	c := status.Config.Get("frontend", "plugin", plugin.GetId(), param.Attrname)
-	var aclParam *config.Map
-
-	if p := status.AclParameters.Get(plugin.GetId()); p != nil {
-		params := p.(*config.Map)
-		if p2 := params.Get(param.Attrname); p2 != nil {
-			aclParam = p2.(*config.Map)
-		}
-	}
 
 	switch param.Attrtype {
 	case "boolean":
@@ -318,12 +299,8 @@ func (plugin *Cplugin) PluginConfig(status RequestStatus, param *Cglobal_param) 
 				val = c.Bool(val.(bool))
 			}
 		}
-		if aclParam != nil {
-			for _, scope := range status.WsScopes {
-				if aclParam.Bool(scope, val.(bool)) != val {
-					val = aclParam.Bool(scope, val.(bool))
-				}
-			}
+		for _, scope := range status.WsScopes {
+			status.AclParameters.Values(plugin.GetId(), param.Attrname, scope).Default(val).Bool()
 		}
 	case "integer":
 		var e error
@@ -339,24 +316,17 @@ func (plugin *Cplugin) PluginConfig(status RequestStatus, param *Cglobal_param) 
 				val = c.Int(0)
 			}
 		}
-		if aclParam != nil {
-			for _, scope := range status.WsScopes {
-				if aclParam.Int(scope, val.(int)) != val {
-					val = aclParam.Int(scope, val.(int))
-				}
-			}
+		for _, scope := range status.WsScopes {
+			status.AclParameters.Values(plugin.GetId(), param.Attrname, scope).Default(val).Int()
 		}
+
 	default:
 		val = param.Attrdefault
 		if c != nil && c.String(val.(string)) != "" {
 			val = c.String(val.(string))
 		}
-		if aclParam != nil {
-			for _, scope := range status.WsScopes {
-				if aclParam.String(scope) != "" {
-					val = aclParam.String(scope)
-				}
-			}
+		for _, scope := range status.WsScopes {
+			status.AclParameters.Values(plugin.GetId(), param.Attrname, scope).Default(val).String()
 		}
 	}
 

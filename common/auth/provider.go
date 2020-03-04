@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"fmt"
 	"net/url"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 
 	"github.com/pydio/cells/common"
 	"github.com/pydio/cells/common/config"
+	"github.com/pydio/cells/common/utils/std"
 )
 
 type ConfigurationProvider interface {
@@ -74,13 +74,13 @@ func NewProvider(rootURL string, values common.ConfigValues) ConfigurationProvid
 		cors:       values.Values("cors"),
 		urls:       values.Values("urls"),
 		oidc:       values.Values("oidc"),
-		clients:    values.Array("staticClients"),
-		connectors: values.Array("connectors"),
+		clients:    values.Values("staticClients"),
+		connectors: values.Values("connectors"),
 	}
 }
 
 func (v *configurationProvider) InsecureRedirects() []string {
-	return v.v.StringArray("insecureRedirects")
+	return v.v.Values("insecureRedirects").StringArray()
 }
 
 func (v *configurationProvider) WellKnownKeys(include ...string) []string {
@@ -127,13 +127,13 @@ func (v *configurationProvider) CORSOptions(iface string) cors.Options {
 }
 
 func (v *configurationProvider) DSN() string {
-	drv, dsn := v.v.Database("dsn")
-	return drv + "://" + dsn
+	d := v.v.Values("dsn").Default(std.Reference("#/defaults/database")).StringMap()
+	return d["drv"] + "://" + d["dsn"]
 }
 
 func (v *configurationProvider) DataSourcePlugin() string {
-	drv, dsn := v.v.Database("dsn")
-	return drv + "://" + dsn
+	d := v.v.Values("dsn").Default(std.Reference("#/defaults/database")).StringMap()
+	return d["drv"] + "://" + d["dsn"]
 }
 
 func (v *configurationProvider) BCryptCost() int {
@@ -153,27 +153,27 @@ func (v *configurationProvider) PublicListenOn() string {
 }
 
 func (v *configurationProvider) PublicDisableHealthAccessLog() bool {
-	return v.v.Bool("publicDisabledHealthAccessLog", false)
+	return v.v.Values("publicDisabledHealthAccessLog").Bool()
 }
 
 func (v *configurationProvider) ConsentRequestMaxAge() time.Duration {
-	return v.v.Duration("consentRequestMaxAge", "30m")
+	return v.v.Values("consentRequestMaxAge").Default(30 * time.Minute).Duration()
 }
 
 func (v *configurationProvider) AccessTokenLifespan() time.Duration {
-	return v.v.Duration("accessTokenLifespan", "10m")
+	return v.v.Values("accessTokenLifespan").Default(10 * time.Minute).Duration()
 }
 
 func (v *configurationProvider) RefreshTokenLifespan() time.Duration {
-	return v.v.Duration("refreshTokenLifespan", "1h")
+	return v.v.Values("refreshTokenLifespan").Default(1 * time.Hour).Duration()
 }
 
 func (v *configurationProvider) IDTokenLifespan() time.Duration {
-	return v.v.Duration("idTokenLifespan", "1h")
+	return v.v.Values("idTokenLifespan").Default(1 * time.Hour).Duration()
 }
 
 func (v *configurationProvider) AuthCodeLifespan() time.Duration {
-	return v.v.Duration("authCodeLifespan", "10m")
+	return v.v.Values("authCodeLifespan").Default(10 * time.Minute).Duration()
 }
 
 func (v *configurationProvider) ScopeStrategy() string {
@@ -214,80 +214,79 @@ func (v *configurationProvider) GetRotatedSystemSecrets() [][]byte {
 }
 
 func (v *configurationProvider) GetSystemSecret() []byte {
-	fmt.Println("Secret is ", string(v.v.Bytes("secret", []byte{})))
-	return v.v.Bytes("secret", []byte{})
+	return []byte(v.v.Values("secret").String())
 }
 
 func (v *configurationProvider) LogoutRedirectURL() *url.URL {
-	u, _ := url.Parse(v.r + v.urls.String("logoutRedirectURL", "/oauth2/logout/callback"))
+	u, _ := url.Parse(v.r + v.urls.Values("logoutRedirectURL").Default("/oauth2/logout/callback").String())
 	return u
 }
 
 func (v *configurationProvider) LoginURL() *url.URL {
-	u, _ := url.Parse(v.r + v.urls.String("loginURL", "/oauth2/login"))
+	u, _ := url.Parse(v.r + v.urls.Values("loginURL").Default("/oauth2/login").String())
 	return u
 }
 
 func (v *configurationProvider) LogoutURL() *url.URL {
-	u, _ := url.Parse(v.r + v.urls.String("logoutURL", "/oauth2/logout"))
+	u, _ := url.Parse(v.r + v.urls.Values("logoutURL").Default("/oauth2/logout").String())
 	return u
 }
 
 func (v *configurationProvider) ConsentURL() *url.URL {
-	u, _ := url.Parse(v.r + v.urls.String("consentURL", "/oauth2/consent"))
+	u, _ := url.Parse(v.r + v.urls.Values("consentURL").Default("/oauth2/consent").String())
 	return u
 }
 
 func (v *configurationProvider) ErrorURL() *url.URL {
-	u, _ := url.Parse(v.r + v.urls.String("errorURL", "/oauth2/fallbacks/error"))
+	u, _ := url.Parse(v.r + v.urls.Values("errorURL").Default("/oauth2/fallbacks/error").String())
 	return u
 }
 
 func (v *configurationProvider) PublicURL() *url.URL {
-	u, _ := url.Parse(v.r + v.urls.String("publicURL", "/oidc/"))
+	u, _ := url.Parse(v.r + v.urls.Values("publicURL").Default("/oidc/").String())
 	return u
 }
 
 func (v *configurationProvider) IssuerURL() *url.URL {
-	u, _ := url.Parse(v.r + v.urls.String("issuerURL", "/oidc/"))
+	u, _ := url.Parse(v.r + v.urls.Values("issuerURL").Default("/oidc/").String())
 	return u
 }
 
 func (v *configurationProvider) OAuth2AuthURL() string {
-	return v.urls.String("oauth2AuthURL", "/oauth2/auth") // this should not have the host etc prepended...
+	return v.urls.Values("oauth2AuthURL").Default("/oauth2/auth").String() // this should not have the host etc prepended...
 }
 
 func (v *configurationProvider) OAuth2ClientRegistrationURL() *url.URL {
-	u, _ := url.Parse(v.r + v.urls.String("loginURL", ""))
+	u, _ := url.Parse(v.r + v.urls.Values("loginURL").Default("").String())
 	return u
 }
 
 func (v *configurationProvider) AllowTLSTerminationFrom() []string {
-	return v.v.StringArray("allowTLSTerminationFrom", []string{})
+	return v.v.Values("allowTLSTerminationFrom").Default([]string{}).StringArray()
 }
 
 func (v *configurationProvider) AccessTokenStrategy() string {
-	return v.v.String("accessTokenStrategy", "opaque")
+	return v.v.Values("accessTokenStrategy").Default("opaque").String()
 }
 
 func (v *configurationProvider) SubjectIdentifierAlgorithmSalt() string {
-	return v.v.String("subjectIdentifierAlgorithmSalt", "")
+	return v.v.Values("subjectIdentifierAlgorithmSalt").Default("").String()
 }
 
 func (v *configurationProvider) OIDCDiscoverySupportedClaims() []string {
-	return v.oidc.StringArray("supportedClaims", []string{})
+	return v.oidc.Values("supportedClaims").Default([]string{}).StringArray()
 }
 
 func (v *configurationProvider) OIDCDiscoverySupportedScope() []string {
-	return v.oidc.StringArray("supportedScope", []string{})
+	return v.oidc.Values("supportedScope").Default([]string{}).StringArray()
 }
 
 func (v *configurationProvider) OIDCDiscoveryUserinfoEndpoint() string {
-	return v.oidc.String("userInfoEndpoint", "/oauth2/userinfo")
+	return v.oidc.Values("userInfoEndpoint").Default("/oauth2/userinfo").String()
 }
 
 func (v *configurationProvider) ShareOAuth2Debug() bool {
-	return v.v.Bool("shareOAuth2Debug", false)
+	return v.v.Values("shareOAuth2Debug").Default(false).Bool()
 }
 
 func (v *configurationProvider) Clients() common.Scanner {
