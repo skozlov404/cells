@@ -240,8 +240,9 @@ func (plugin *Cplugin) FilterActions(status RequestStatus, pool *PluginsPool, ac
 		aclValue := true
 
 		for _, scope := range status.WsScopes {
-			enabled = status.AclActions.Values(plugin.GetId(), actionName, scope).Default(aclValue).Bool()
+			aclValue = status.AclActions.Values(plugin.GetId(), actionName, scope).Default(aclValue).Bool()
 		}
+
 		if !aclValue {
 			continue
 		}

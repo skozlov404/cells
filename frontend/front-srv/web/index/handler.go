@@ -44,8 +44,8 @@ func (h *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rolesConfigs := user.FlattenedRolesConfigs()
 	status := frontend.RequestStatus{
 		Config:        cfg,
-		AclParameters: rolesConfigs.Get("parameters").(*config.Map),
-		AclActions:    rolesConfigs.Get("actions").(*config.Map),
+		AclParameters: rolesConfigs.Values("parameters"),
+		AclActions:    rolesConfigs.Values("actions"),
 		WsScopes:      user.GetActiveScopes(),
 		User:          user,
 		NoClaims:      !user.Logged,
@@ -55,7 +55,7 @@ func (h *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	registry := pool.RegistryForStatus(ctx, status)
 	bootConf := frontend.ComputeBootConf(pool)
 
-	url := config.Get("defaults", "url").String("")
+	url := config.Values("defaults", "url").String()
 	startParameters := map[string]interface{}{
 		"BOOTER_URL":          "/frontend/bootconf",
 		"MAIN_ELEMENT":        "ajxp_desktop",
@@ -68,13 +68,13 @@ func (h *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tplConf := &TplConf{
-		ApplicationTitle: config.Get("frontend", "plugin", "core.pydio", "APPLICATION_TITLE").String("Cells"),
+		ApplicationTitle: config.Values("frontend", "plugin", "core.pydio", "APPLICATION_TITLE").Default("Cells").String(),
 		Rebase:           url,
 		ResourcesFolder:  "plug/gui.ajax/res",
 		Favicon:          "plug/gui.ajax/res/themes/common/images/favicon.png",
 		Theme:            "material",
 		Version:          frontend.VersionHash(),
-		Debug:            config.Get("frontend", "debug").Bool(false),
+		Debug:            config.Values("frontend", "debug").Bool(),
 		LoadingString:    GetLoadingString(bootConf.CurrentLanguage),
 		StartParameters:  startParameters,
 	}
@@ -88,7 +88,7 @@ func (h *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	for hK, hV := range config.Get("frontend", "secureHeaders").StringMap(map[string]string{}) {
+	for hK, hV := range config.Values("frontend", "secureHeaders").StringMap() {
 		w.Header().Set(hK, hV)
 	}
 	var tpl *template.Template

@@ -194,22 +194,7 @@ var mandatoryOptions = []ServiceOption{
 	// Adding the config to the context
 	AfterInit(func(s Service) error {
 		ctx := s.Options().Context
-
-		cfg := config.NewMap()
-
-		if err := config.Get("services", s.Name()).Scan(&cfg); err != nil {
-			log.Logger(ctx).Error("", zap.Error(err))
-			return err
-		}
-
-		if cfg == nil {
-			cfg = config.NewMap()
-		}
-
-		// Retrieving and assigning port to the config
-		if p := config.Get("ports", s.Name()).Int(0); p != 0 {
-			cfg.Set("port", p)
-		}
+		cfg := config.Values("services", s.Name)
 
 		//log.Logger(ctx).Debug("Service configuration retrieved", zap.String("service", s.Name()), zap.Any("cfg", cfg))
 		ctx = servicecontext.WithConfig(ctx, cfg)
@@ -293,6 +278,7 @@ var mandatoryOptions = []ServiceOption{
 	BeforeStart(func(s Service) error {
 
 		ctx := s.Options().Context
+		cfg := servicecontext.GetConfig(ctx)
 
 		// Only if we have a DAO
 		if s.Options().DAO == nil {
@@ -300,7 +286,7 @@ var mandatoryOptions = []ServiceOption{
 		}
 
 		var d dao.DAO
-		driver, dsn := config.GetDatabase(s.Name())
+		driver, dsn := config.GetDatabase(cfg.Values("database"))
 
 		var prefix string
 		switch v := s.Options().Prefix.(type) {
@@ -654,19 +640,19 @@ func (s *service) IsREST() bool {
 // RequiresFork reads config fork=true to decide whether this service starts in a forked process or not.
 func (s *service) AutoStart() bool {
 	ctx := s.Options().Context
-	return s.Options().AutoStart || servicecontext.GetConfig(ctx).Bool("autostart")
+	return s.Options().AutoStart || servicecontext.GetConfig(ctx).Values("autostart").Bool()
 }
 
 // RequiresFork reads config fork=true to decide whether this service starts in a forked process or not.
 func (s *service) RequiresFork() bool {
 	ctx := s.Options().Context
-	return s.Options().Fork || servicecontext.GetConfig(ctx).Bool("fork")
+	return s.Options().Fork || servicecontext.GetConfig(ctx).Values("fork").Bool()
 }
 
 // RequiresFork reads config fork=true to decide whether this service starts in a forked process or not.
 func (s *service) MustBeUnique() bool {
 	ctx := s.Options().Context
-	return s.Options().Unique || servicecontext.GetConfig(ctx).Bool("unique")
+	return s.Options().Unique || servicecontext.GetConfig(ctx).Values("unique").Bool()
 }
 
 func (s *service) Client() (string, client.Client) {

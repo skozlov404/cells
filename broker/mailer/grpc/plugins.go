@@ -90,7 +90,7 @@ func init() {
 }
 
 func watchConfigChanges(ctx context.Context, handler *Handler) (wconfig.Watcher, error) {
-	watcher, err := config.Default().Watch("services", Name)
+	watcher, err := config.Watch("services", Name)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,10 @@ func watchConfigChanges(ctx context.Context, handler *Handler) (wconfig.Watcher,
 				return
 			}
 			log.Logger(ctx).Info("Refreshing configs - Checking it's valid")
-			handler.checkConfigChange(ctx, true)
+
+			// TODO - do a proper watch
+			// handler.initFromConf(ctx)
+			// handler.checkConfigChange(ctx, true)
 		}
 	}()
 	return watcher, nil

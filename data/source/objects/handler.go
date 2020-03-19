@@ -41,7 +41,7 @@ import (
 func NewTreeHandler(conf common.ConfigValues) *TreeHandler {
 	t := &TreeHandler{}
 	t.FS = afero.NewOsFs()
-	restrict := conf.String("allowedLocalDsFolder")
+	restrict := conf.Values("allowedLocalDsFolder").String()
 	if t.hasRootRef = restrict != ""; t.hasRootRef {
 		f := restrict
 		t.FS = afero.NewBasePathFs(t.FS, f)

@@ -31,7 +31,7 @@ import (
 	"github.com/micro/go-micro"
 	"github.com/pydio/cells/common"
 	"github.com/pydio/cells/common/config"
-	"github.com/pydio/cells/common/micro"
+	defaults "github.com/pydio/cells/common/micro"
 	"github.com/pydio/cells/common/plugins"
 	"github.com/pydio/cells/common/proto/sync"
 	"github.com/pydio/cells/common/proto/tree"
@@ -52,12 +52,10 @@ func init() {
 			service.RouterDependencies(),
 			service.Fork(true),
 			service.WithMicro(func(m micro.Service) error {
-				var indexContent bool
 
 				cfg := servicecontext.GetConfig(m.Options().Context)
-				if indexConf := cfg.Get("indexContent"); indexConf != nil {
-					indexContent = cfg.Get("indexContent").(bool)
-				}
+				indexContent := cfg.Values("indexContent").Bool()
+
 				dir, _ := config.ServiceDataDir(Name)
 				bleve.BleveIndexPath = filepath.Join(dir, "searchengine.bleve")
 				bleveEngine, err := bleve.NewBleveEngine(indexContent)

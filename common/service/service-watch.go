@@ -6,6 +6,7 @@ import (
 
 	"github.com/pydio/cells/common"
 	"github.com/pydio/cells/common/config"
+	"github.com/pydio/cells/common/utils/std"
 )
 
 var (
@@ -27,15 +28,14 @@ func initWatch() {
 					break
 				}
 
-				var c map[string]map[string]interface{}
-				if err := res.Scan(&c); err != nil {
+				c := new(std.Map)
+				if err := res.Scan(c); err != nil {
 					continue
 				}
 
 				for name, fs := range watchers {
 					for _, f := range fs {
-						cfg := config.NewMap(c[name])
-						f(*cfg)
+						f(c.Values(name))
 					}
 				}
 			}

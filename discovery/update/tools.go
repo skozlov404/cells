@@ -60,7 +60,7 @@ import (
 // updates available
 func LoadUpdates(ctx context.Context, conf common.ConfigValues, request *update.UpdateRequest) ([]*update.Package, error) {
 
-	urlConf := conf.String("updateUrl")
+	urlConf := conf.Values("updateUrl").String()
 	if urlConf == "" {
 		return nil, errors.BadRequest(common.SERVICE_UPDATE, "cannot find update url")
 	}
@@ -71,10 +71,7 @@ func LoadUpdates(ctx context.Context, conf common.ConfigValues, request *update.
 	if strings.Trim(parsed.Path, "/") == "" {
 		parsed.Path = "/a/update-server"
 	}
-	channel := conf.String("channel")
-	if channel == "" {
-		channel = "stable"
-	}
+	channel := conf.Values("channel").Default("stable").String()
 
 	// Set default values
 	if request.PackageName == "" {
@@ -199,7 +196,7 @@ func ApplyUpdate(ctx context.Context, p *update.Package, conf common.ConfigValue
 			return
 		}
 
-		pKey := conf.Get("publicKey").(string)
+		pKey := conf.Values("publicKey").String()
 		block, _ := pem.Decode([]byte(pKey))
 		var pubKey rsa.PublicKey
 		if _, err := asn1.Unmarshal(block.Bytes, &pubKey); err != nil {

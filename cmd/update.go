@@ -36,6 +36,7 @@ import (
 	"github.com/pydio/cells/common/config"
 	"github.com/pydio/cells/common/log"
 	"github.com/pydio/cells/common/proto/update"
+	"github.com/pydio/cells/common/utils/std"
 	update2 "github.com/pydio/cells/discovery/update"
 )
 
@@ -50,13 +51,14 @@ To apply the actual update, re-run the command with a --version parameter.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		url := config.Default().Get("services", common.SERVICE_GRPC_NAMESPACE_+common.SERVICE_UPDATE, "updateUrl").String("")
-		pKey := config.Default().Get("services", common.SERVICE_GRPC_NAMESPACE_+common.SERVICE_UPDATE, "publicKey").String("")
-		channel := config.Default().Get("services", common.SERVICE_GRPC_NAMESPACE_+common.SERVICE_UPDATE, "channel").String("stable")
-		configs := config.Map{}
-		configs.Set("updateUrl", url)
-		configs.Set("channel", channel)
-		configs.Set("publicKey", pKey)
+		url := config.Values("services", common.SERVICE_GRPC_NAMESPACE_+common.SERVICE_UPDATE, "updateUrl").String()
+		pKey := config.Values("services", common.SERVICE_GRPC_NAMESPACE_+common.SERVICE_UPDATE, "publicKey").String()
+		channel := config.Values("services", common.SERVICE_GRPC_NAMESPACE_+common.SERVICE_UPDATE, "channel").Default("stable").String()
+
+		configs := new(std.Map)
+		configs.Values("updateUrl").Set(url)
+		configs.Values("channel").Set(channel)
+		configs.Values("publicKey").Set(pKey)
 
 		binaries, e := update2.LoadUpdates(context.Background(), configs, &update.UpdateRequest{})
 		if e != nil {

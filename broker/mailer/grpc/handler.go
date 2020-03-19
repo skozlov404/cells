@@ -22,7 +22,6 @@ package grpc
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	protobuf "github.com/golang/protobuf/proto"
@@ -37,14 +36,13 @@ import (
 	"github.com/pydio/cells/common/forms"
 	"github.com/pydio/cells/common/log"
 	proto "github.com/pydio/cells/common/proto/mailer"
-	servicecontext "github.com/pydio/cells/common/service/context"
 )
 
 type Handler struct {
 	queueName    string
-	queueConfig  config.Map
+	queueConfig  common.ConfigValues
 	senderName   string
-	senderConfig config.Map
+	senderConfig common.ConfigValues
 	queue        mailer.Queue
 	sender       mailer.Sender
 }
@@ -70,7 +68,9 @@ func (h *Handler) SendMail(ctx context.Context, req *proto.SendMailRequest, rsp 
 		log.Logger(ctx).Error("cannot process mail to send: empty body", zap.Any("Mail", mail), zap.Error(e))
 		return e
 	}
-	h.checkConfigChange(ctx, false)
+
+	// TODO - add a watch in here ?
+	// h.checkConfigChange(ctx, false)
 
 	for _, to := range mail.To {
 		// Find language to be used
@@ -166,7 +166,7 @@ func (h *Handler) SendMail(ctx context.Context, req *proto.SendMailRequest, rsp 
 // ConsumeQueue browses current queue for emails to be sent
 func (h *Handler) ConsumeQueue(ctx context.Context, req *proto.ConsumeQueueRequest, rsp *proto.ConsumeQueueResponse) error {
 
-	h.checkConfigChange(ctx, false)
+	// h.checkConfigChange(ctx, false)
 
 	counter := int64(0)
 	c := func(em *proto.Mail) error {
@@ -189,63 +189,37 @@ func (h *Handler) ConsumeQueue(ctx context.Context, req *proto.ConsumeQueueReque
 	return nil
 }
 
-func (h *Handler) parseConf(conf common.ConfigValues) (queueName string, queueConfig config.Map, senderName string, senderConfig config.Map) {
+func (h *Handler) parseConf(conf common.ConfigValues) (string, string) {
 
 	// Defaults
-	queueName = "boltdb"
-	senderName = "sendmail"
-	senderConfig = conf.(config.Map)
-	queueConfig = conf.(config.Map)
+	queueName := conf.Values("queue", "@value").Default("boltdb").String()
+	senderName := conf.Values("sender", forms.SwitchFieldValueKey).Default("sendmail").String()
 
-	// Parse configs for queue
-	if q := conf.String("queue"); q != "" {
-		var queueData struct {
-			Value string `json:"@value"`
-		}
-		if e := json.Unmarshal([]byte(q), &queueData); e == nil && queueData.Value != "" {
-			queueName = queueData.Value
-		}
-
-	}
-
-	// Parse configs for sender
-	var senderConf map[string]interface{}
-	conf.Values("sender").Scan(senderConf)
-	if senderConf != nil {
-		senderConfig = config.Map{}
-		var name string
-		for k, v := range senderConf {
-			if k == forms.SwitchFieldValueKey {
-				name = v.(string)
-			} else {
-				// Special case for sendmail executable path
-				if k == "executable" && v == "other" {
-					v = config.Get("services", Name, "sendmail").String("sendmail")
-				}
-				senderConfig.Set(k, v)
-			}
-		}
-		log.Logger(context.Background()).Debug("Parsed config for mailer", zap.Any("c", senderConfig))
-		senderName = name
-	}
-	return
+	// TODO - dunno what the fuck is going on here
+	// if k == "executable" && v == "other" {
+	// 	v = config.Get("services", Name, "sendmail").String("sendmail")
+	// }
+	// senderConfig.Set(k, v)
+	return queueName, senderName
 }
 
 func (h *Handler) initFromConf(ctx context.Context, conf common.ConfigValues, check bool) (e error) {
 
 	defer func() {
 		if e != nil {
-			config.Default().Set(false, "services", servicecontext.GetServiceName(ctx), "valid")
+			conf.Values("valid").Set(true)
 		} else {
-			config.Default().Set(true, "services", servicecontext.GetServiceName(ctx), "valid")
+			conf.Values("valid").Set(false)
 		}
 		config.Save(common.PYDIO_SYSTEM_USERNAME, "Update mailer valid config")
 	}()
 
-	queueName, queueConfig, senderName, senderConfig := h.parseConf(conf)
+	queueName, senderName := h.parseConf(conf)
 	if h.queue != nil {
 		h.queue.Close()
 	}
+
+	queueConfig := conf.Values("queue")
 	h.queue = mailer.GetQueue(ctx, queueName, queueConfig)
 	if h.queue == nil {
 		queueName = "boltdb"
@@ -254,11 +228,13 @@ func (h *Handler) initFromConf(ctx context.Context, conf common.ConfigValues, ch
 		log.Logger(ctx).Info("Starting mailer with queue '" + queueName + "'")
 	}
 
+	senderConfig := conf.Values("sender")
 	sender, err := mailer.GetSender(senderName, senderConfig)
 	if err != nil {
 		e = err
 		return
 	}
+
 	log.Logger(ctx).Info("Starting mailer with sender '" + senderName + "'")
 	h.sender = sender
 	h.queueName = queueName
@@ -273,18 +249,17 @@ func (h *Handler) initFromConf(ctx context.Context, conf common.ConfigValues, ch
 	return
 }
 
-func (h *Handler) checkConfigChange(ctx context.Context, check bool) error {
+// TODO - replace with a watch
+// func (h *Handler) checkConfigChange(ctx context.Context, check bool) error {
+// 	cfg := servicecontext.GetConfig(ctx)
 
-	var cfg config.Map
-	if e := config.Get("services", servicecontext.GetServiceName(ctx)).Scan(&cfg); e != nil {
-		return e
-	}
-	queueName, _, senderName, senderConfig := h.parseConf(cfg)
-	m1, _ := json.Marshal(senderConfig)
-	m2, _ := json.Marshal(h.senderConfig)
-	if queueName != h.queueName || senderName != h.senderName || string(m1) != string(m2) {
-		log.Logger(ctx).Info("Mailer configuration has changed. Refreshing sender and queue")
-		return h.initFromConf(ctx, cfg, check)
-	}
-	return nil
-}
+// 	queueName, _, senderName, senderConfig := h.parseConf(cfg)
+
+// 	m1, _ := json.Marshal(senderConfig)
+// 	m2, _ := json.Marshal(h.senderConfig)
+// 	if queueName != h.queueName || senderName != h.senderName || string(m1) != string(m2) {
+// 		log.Logger(ctx).Info("Mailer configuration has changed. Refreshing sender and queue")
+// 		return h.initFromConf(ctx, cfg, check)
+// 	}
+// 	return nil
+// }

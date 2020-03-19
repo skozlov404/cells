@@ -16,6 +16,7 @@ import (
 	"github.com/pydio/cells/common/config"
 	"github.com/pydio/cells/common/log"
 	"github.com/pydio/cells/common/utils/i18n"
+	"github.com/pydio/cells/common/utils/std"
 )
 
 type PluginsPool struct {
@@ -165,8 +166,8 @@ func (p *PluginsPool) AllPluginsManifests(ctx context.Context, lang string) *Cpl
 		Config:        config.Default(),
 		Lang:          lang,
 		NoClaims:      true,
-		AclParameters: config.NewMap(),
-		AclActions:    config.NewMap(),
+		AclParameters: new(std.Map),
+		AclActions:    new(std.Map),
 	}
 
 	for _, plugin := range p.Plugins {

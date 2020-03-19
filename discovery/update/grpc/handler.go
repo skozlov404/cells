@@ -37,7 +37,7 @@ import (
 	"github.com/pydio/cells/common/log"
 	"github.com/pydio/cells/common/proto/jobs"
 	"github.com/pydio/cells/common/proto/update"
-	"github.com/pydio/cells/common/service/context"
+	servicecontext "github.com/pydio/cells/common/service/context"
 	"github.com/pydio/cells/common/utils/permissions"
 	update2 "github.com/pydio/cells/discovery/update"
 )
@@ -46,20 +46,23 @@ type Handler struct{}
 
 func (h *Handler) UpdateRequired(ctx context.Context, request *update.UpdateRequest, response *update.UpdateResponse) error {
 
-	var configs common.ConfigValues
-	var cMap config.Map
-	if e := config.Get("services", servicecontext.GetServiceName(ctx)).Scan(&cMap); e == nil {
-		configs = &cMap
-	} else {
-		log.Logger(ctx).Error("Cannot load last configs for update service, using context configs", zap.Error(e))
-		configs = servicecontext.GetConfig(ctx)
-	}
-	binaries, e := update2.LoadUpdates(ctx, configs, request)
+	cfg := servicecontext.GetConfig(ctx)
+
+	// TODO - this shouldn't be needed
+	// var cMap config.Map
+	// if e := config.Get("services", servicecontext.GetServiceName(ctx)).Scan(&cMap); e == nil {
+	// 	configs = &cMap
+	// } else {
+	// 	log.Logger(ctx).Error("Cannot load last configs for update service, using context configs", zap.Error(e))
+	// 	configs = servicecontext.GetConfig(ctx)
+	// }
+
+	binaries, e := update2.LoadUpdates(ctx, cfg, request)
 	if e != nil {
 		log.Logger(ctx).Error("Failed retrieving available updates", zap.Error(e))
 		return e
 	}
-	response.Channel = configs.String("channel")
+	response.Channel = cfg.Values("channel").String()
 	response.AvailableBinaries = binaries
 
 	return nil
@@ -67,15 +70,16 @@ func (h *Handler) UpdateRequired(ctx context.Context, request *update.UpdateRequ
 
 func (h *Handler) ApplyUpdate(ctx context.Context, request *update.ApplyUpdateRequest, response *update.ApplyUpdateResponse) error {
 
-	var configs common.ConfigValues
-	var cMap config.Map
-	if e := config.Get("services", servicecontext.GetServiceName(ctx)).Scan(&cMap); e == nil {
-		configs = &cMap
-	} else {
-		log.Logger(ctx).Error("Cannot load last configs for update service, using context configs", zap.Error(e))
-		configs = servicecontext.GetConfig(ctx)
-	}
-	binaries, e := update2.LoadUpdates(ctx, configs, &update.UpdateRequest{
+	cfg := servicecontext.GetConfig(ctx)
+	// var configs common.ConfigValues
+	// var cMap config.Map
+	// if e := config.Get("services", servicecontext.GetServiceName(ctx)).Scan(&cMap); e == nil {
+	// 	configs = &cMap
+	// } else {
+	// 	log.Logger(ctx).Error("Cannot load last configs for update service, using context configs", zap.Error(e))
+	// 	configs = servicecontext.GetConfig(ctx)
+	// }
+	binaries, e := update2.LoadUpdates(ctx, cfg, &update.UpdateRequest{
 		PackageName: request.PackageName,
 	})
 	if e != nil {
@@ -160,7 +164,7 @@ func (h *Handler) ApplyUpdate(ctx context.Context, request *update.ApplyUpdateRe
 		}
 	}()
 
-	go update2.ApplyUpdate(newCtx, apply, configs, false, pgChan, doneChan, errorChan)
+	go update2.ApplyUpdate(newCtx, apply, cfg, false, pgChan, doneChan, errorChan)
 
 	return nil
 }

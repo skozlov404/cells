@@ -161,7 +161,7 @@ $ ` + os.Args[0] + ` start --exclude=pydio.grpc.idm.roles
 	Run: func(cmd *cobra.Command, args []string) {
 
 		//Pre-check that pydio.json is properly configured
-		if a, _ := config.GetDefaultDatabase(); a == "" {
+		if a := config.Values("#/defaults/database"); a == nil {
 			var crtUser string
 			if u, er := user.Current(); er == nil {
 				crtUser = "(currently running as '" + u.Username + "')"

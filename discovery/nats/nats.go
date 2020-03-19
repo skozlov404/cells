@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pydio/cells/common/service/context"
+	servicecontext "github.com/pydio/cells/common/service/context"
 
 	net2 "github.com/pydio/cells/common/utils/net"
 
@@ -47,80 +47,80 @@ func Init() {
 }
 
 func run() {
-	reg := viper.GetString("registry")
+	//reg := viper.GetString("registry")
 	regAddress := viper.GetString("registry_address")
 	regClusterAddress := viper.GetString("registry_cluster_address")
 	regClusterRoutes := viper.GetString("registry_cluster_routes")
 
-	if reg == "nats" {
-		opts := new(server.Options)
-		if len(net2.DefaultAdvertiseAddress) > 0 {
-			opts.ClientAdvertise = net2.DefaultAdvertiseAddress
-		}
+	//if reg == "nats" {
+	opts := new(server.Options)
+	if len(net2.DefaultAdvertiseAddress) > 0 {
+		opts.ClientAdvertise = net2.DefaultAdvertiseAddress
+	}
 
-		host, p, err := net.SplitHostPort(regAddress)
+	host, p, err := net.SplitHostPort(regAddress)
+	if err != nil {
+		log.Fatal("nats: wrong address")
+	}
+
+	// Port has already been so no need to recheck
+	port, _ := strconv.Atoi(p)
+
+	opts.Host = host
+	opts.Port = port
+	opts.NoSigs = true
+
+	if _, err := net.Dial("tcp", regAddress); err == nil {
+		return
+	}
+
+	if regClusterAddress != "" {
+		clusterOpts := new(server.ClusterOpts)
+
+		clusterHost, p, err := net.SplitHostPort(regClusterAddress)
 		if err != nil {
-			log.Fatal("nats: wrong address")
+			log.Fatal("nats: wrong cluster address")
 		}
 
-		// Port has already been so no need to recheck
-		port, _ := strconv.Atoi(p)
+		if _, err := net.Dial("tcp", regClusterAddress); err != nil {
+			// Port has already been so no need to recheck
+			clusterPort, _ := strconv.Atoi(p)
 
-		opts.Host = host
-		opts.Port = port
-		opts.NoSigs = true
+			clusterOpts.Host = clusterHost
+			clusterOpts.Port = clusterPort
 
-		if _, err := net.Dial("tcp", regAddress); err == nil {
-			return
-		}
-
-		if regClusterAddress != "" {
-			clusterOpts := new(server.ClusterOpts)
-
-			clusterHost, p, err := net.SplitHostPort(regClusterAddress)
-			if err != nil {
-				log.Fatal("nats: wrong cluster address")
-			}
-
-			if _, err := net.Dial("tcp", regClusterAddress); err != nil {
-				// Port has already been so no need to recheck
-				clusterPort, _ := strconv.Atoi(p)
-
-				clusterOpts.Host = clusterHost
-				clusterOpts.Port = clusterPort
-
-				opts.Cluster = *clusterOpts
-			}
-		}
-
-		if regClusterRoutes != "" {
-			opts.RoutesStr = regClusterRoutes
-			opts.Routes = server.RoutesFromStr(regClusterRoutes)
-		}
-
-		// Create the server with appropriate options.
-		hd = server.New(opts)
-
-		// Configure the logger based on the flags
-		ctx := servicecontext.WithServiceName(context.Background(), "nats")
-		ctx = servicecontext.WithServiceColor(ctx, servicecontext.ServiceColorGrpc)
-		hd.SetLogger(logger{log.Logger(ctx)}, true, false)
-
-		// Start things up. Block here until done.
-		go func() {
-			err := server.Run(hd)
-			if err != nil {
-				log.Fatal("nats: could not start", zap.Error(err))
-			}
-		}()
-
-		// Allowing time for nats to start up
-		<-time.After(1 * time.Second)
-
-		if !hd.ReadyForConnections(3 * time.Second) {
-			log.Fatal("nats: start timed out")
+			opts.Cluster = *clusterOpts
 		}
 	}
+
+	if regClusterRoutes != "" {
+		opts.RoutesStr = regClusterRoutes
+		opts.Routes = server.RoutesFromStr(regClusterRoutes)
+	}
+
+	// Create the server with appropriate options.
+	hd = server.New(opts)
+
+	// Configure the logger based on the flags
+	ctx := servicecontext.WithServiceName(context.Background(), "nats")
+	ctx = servicecontext.WithServiceColor(ctx, servicecontext.ServiceColorGrpc)
+	hd.SetLogger(logger{log.Logger(ctx)}, true, false)
+
+	// Start things up. Block here until done.
+	go func() {
+		err := server.Run(hd)
+		if err != nil {
+			log.Fatal("nats: could not start", zap.Error(err))
+		}
+	}()
+
+	// Allowing time for nats to start up
+	<-time.After(1 * time.Second)
+
+	if !hd.ReadyForConnections(3 * time.Second) {
+		log.Fatal("nats: start timed out")
+	}
+	//}
 }
 
 type logger struct {

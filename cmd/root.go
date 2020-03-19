@@ -48,6 +48,7 @@ import (
 
 	// All registries
 	natsregistry "github.com/pydio/cells/common/micro/registry/nats"
+	raftregistry "github.com/pydio/cells/common/micro/registry/raft"
 
 	// All transports
 	grpctransport "github.com/pydio/cells/common/micro/transport/grpc"
@@ -275,6 +276,8 @@ func initAdvertiseIP() {
 func handleRegistry() {
 
 	switch viper.Get("registry") {
+	case "raft":
+		raftregistry.Enable()
 	case "nats":
 		natsregistry.Enable()
 	default:

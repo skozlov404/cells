@@ -26,7 +26,6 @@ import (
 
 	"github.com/pydio/cells/common"
 	"github.com/pydio/cells/common/service"
-	"github.com/pydio/cells/discovery/config"
 	proto "github.com/pydio/config-srv/proto/config"
 )
 
@@ -36,7 +35,7 @@ func init() {
 			service.Name(common.SERVICE_GRPC_NAMESPACE_+common.SERVICE_CONFIG),
 			service.Tag(common.SERVICE_TAG_DISCOVERY),
 			service.Description("Main service loading configurations for all other services."),
-			service.WithStorage(config.NewDAO),
+			// service.WithStorage(config.NewDAO),
 			service.WithMicro(func(m micro.Service) error {
 				// Register handler
 				proto.RegisterConfigHandler(m.Server(), new(Handler))
