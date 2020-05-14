@@ -12,8 +12,8 @@ import (
 
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
-	"github.com/micro/go-config/source"
 	"github.com/pborman/uuid"
+	"github.com/pydio/cells/common/config/values/source"
 	"github.com/pydio/pydio-sdk-go/client/provisioning"
 	sdkconfig "github.com/pydio/pydio-sdk-go/config"
 	models2 "github.com/pydio/pydio-sdk-go/models"

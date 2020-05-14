@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/micro/go-config/reader"
 	"github.com/pborman/uuid"
 	"go.uber.org/zap"
 
 	"github.com/pydio/cells/common"
 	"github.com/pydio/cells/common/config"
+	"github.com/pydio/cells/common/config/values/reader"
 	"github.com/pydio/cells/common/log"
 	"github.com/pydio/cells/common/utils/i18n"
 )

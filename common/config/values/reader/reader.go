@@ -4,7 +4,7 @@ package reader
 import (
 	"time"
 
-	"github.com/micro/go-config/source"
+	"github.com/pydio/cells/common/config/values/source"
 )
 
 // Reader is an interface for merging changesets

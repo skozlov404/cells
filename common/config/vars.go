@@ -32,7 +32,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/micro/go-config/reader"
 	"github.com/pydio/go-os/config"
 	"github.com/pydio/go-os/config/source/file"
 	"github.com/spf13/cobra"
@@ -42,6 +41,7 @@ import (
 	file2 "github.com/pydio/cells/common/config/file"
 	"github.com/pydio/cells/common/config/memory"
 	"github.com/pydio/cells/common/config/remote"
+	"github.com/pydio/cells/common/config/values/reader"
 	defaults "github.com/pydio/cells/common/micro"
 )
 

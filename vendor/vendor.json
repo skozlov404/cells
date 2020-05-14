@@ -724,13 +724,6 @@
 			"revisionTime": "2018-03-27T04:09:10Z"
 		},
 		{
-			"checksumSHA1": "t6GkLUdf0ydkb/CuG90XPRY8H/o=",
-			"origin": "github.com/coreos/dex/vendor/github.com/coreos/go-oidc",
-			"path": "github.com/coreos/go-oidc",
-			"revision": "a8abebc32ad372328714d3845f4d32666717e3f4",
-			"revisionTime": "2018-04-06T10:54:59Z"
-		},
-		{
 			"checksumSHA1": "4tTcNh86OwCSkCD6WeA6ajRYqDA=",
 			"path": "github.com/coreos/go-oidc/jose",
 			"revision": "a4973d9a4225417aecf5d450a9522f00c1f7130f",
@@ -2985,18 +2978,6 @@
 			"path": "github.com/micro/go-api/server",
 			"revision": "1adef4afafd09abaef2d52d911bd00db4acbd9e6",
 			"revisionTime": "2018-04-08T11:38:06Z"
-		},
-		{
-			"checksumSHA1": "jugvy+NKo6OIijYfWBkDAWNi1SY=",
-			"path": "github.com/micro/go-config/reader",
-			"revision": "05803c35ec9dbea47ba1258fc024259e94761892",
-			"revisionTime": "2018-03-21T07:47:09Z"
-		},
-		{
-			"checksumSHA1": "mqM/P0yaj5gyi5M6B+cLJBvOZd0=",
-			"path": "github.com/micro/go-config/source",
-			"revision": "05803c35ec9dbea47ba1258fc024259e94761892",
-			"revisionTime": "2018-03-21T07:47:09Z"
 		},
 		{
 			"checksumSHA1": "XiGYfivLxazG201tsVqbAepweE4=",

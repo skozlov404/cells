@@ -5,11 +5,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/micro/go-config/reader"
 	"github.com/pborman/uuid"
 
 	"github.com/pydio/cells/common"
 	"github.com/pydio/cells/common/config/remote"
+	"github.com/pydio/cells/common/config/values/reader"
 	"github.com/pydio/cells/common/config/vault"
 	"github.com/pydio/go-os/config"
 )
