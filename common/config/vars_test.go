@@ -19,7 +19,7 @@ func TestGetSet(t *testing.T) {
 		err := os.MkdirAll(workingDir, 0755)
 		So(err, ShouldBeNil)
 
-		PydioConfigDir = workingDir
+		pydioConfigDir = workingDir
 
 		Convey("Simple GetSet Works", func() {
 			testVal := "This is a test"

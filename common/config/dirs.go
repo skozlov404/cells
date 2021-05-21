@@ -45,6 +45,9 @@ func ApplicationWorkingDir(dirType ...ApplicationDirType) string {
 	if len(dirType) > 0 {
 		d = dirType[0]
 	}
+	if len(dirType) == 0 && PydioConfigDir != "" {
+		return PydioConfigDir
+	}
 	if len(dirType) == 0 && os.Getenv("CELLS_WORKING_DIR") != "" {
 		f = os.Getenv("CELLS_WORKING_DIR")
 	} else if d == ApplicationDirData && os.Getenv("CELLS_DATA_DIR") != "" {
@@ -84,6 +87,8 @@ func ApplicationWorkingDir(dirType ...ApplicationDirType) string {
 	if err := os.MkdirAll(f, 0755); err != nil {
 		log.Fatal("Could not create local data dir - please check that you have the correct permissions for the folder -", f)
 	}
+
+	PydioConfigDir = f
 
 	return f
 }

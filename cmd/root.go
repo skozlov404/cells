@@ -176,7 +176,7 @@ func initConfig() {
 		return
 	}
 
-	versionsStore := filex.NewStore(config.PydioConfigDir)
+	versionsStore := filex.NewStore(config.ApplicationWorkingDir())
 
 	var vaultConfig config.Store
 	var defaultConfig config.Store
@@ -190,7 +190,7 @@ func initConfig() {
 		)
 	default:
 		source := file.NewSource(
-			microconfig.SourceName(filepath.Join(config.PydioConfigDir, config.PydioConfigFile)),
+			microconfig.SourceName(filepath.Join(config.ApplicationWorkingDir(), config.PydioConfigFile)),
 		)
 
 		vaultConfig = config.New(
@@ -198,8 +198,8 @@ func initConfig() {
 				microconfig.NewConfig(
 					microconfig.WithSource(
 						vault.NewVaultSource(
-							filepath.Join(config.PydioConfigDir, "pydio-vault.json"),
-							filepath.Join(config.PydioConfigDir, "cells-vault-key"),
+							filepath.Join(config.ApplicationWorkingDir(), "pydio-vault.json"),
+							filepath.Join(config.ApplicationWorkingDir(), "cells-vault-key"),
 							true,
 						),
 					),

@@ -26,8 +26,8 @@ import (
 )
 
 var (
-	// PydioConfigDir is the default location for the configuration
-	PydioConfigDir = ApplicationWorkingDir()
+	// pydioConfigDir is the cached location for the configuration
+	pydioConfigDir string
 
 	// PydioConfigFile is the default file name for the configuration
 	PydioConfigFile = "pydio.json"

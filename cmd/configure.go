@@ -168,9 +168,9 @@ ENVIRONMENT
 		}
 
 		// Init the config file
-		versionsStore := filex.NewStore(config.PydioConfigDir)
+		versionsStore := filex.NewStore(config.ApplicationWorkingDir())
 
-		written, err := filex.WriteIfNotExists(filepath.Join(config.PydioConfigDir, config.PydioConfigFile), config.SampleConfig)
+		written, err := filex.WriteIfNotExists(filepath.Join(config.ApplicationWorkingDir(), config.PydioConfigFile), config.SampleConfig)
 		if err != nil {
 			return errors.New("Error while trying to create default config file")
 		}

@@ -122,7 +122,7 @@ ENVIRONMENT
 			"fork": "is_fork",
 		})
 
-		if !filex.Exists(filepath.Join(config.PydioConfigDir, config.PydioConfigFile)) {
+		if !filex.Exists(filepath.Join(config.ApplicationWorkingDir(), config.PydioConfigFile)) {
 			return triggerInstall(
 				"We cannot find a configuration file ... "+config.ApplicationWorkingDir()+"/pydio.json",
 				"Do you want to create one now",
